@@ -9,6 +9,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { chatApi, type ChatMessage } from '@/lib/api/chat.api'
 import { cn } from '@/lib/utils'
 import StandaloneSurveyRenderer from './StandaloneSurveyRenderer'
+import { Streamdown } from 'streamdown';
+import type { BundledTheme } from 'shiki';
+
+const themes = ['github-light', 'github-dark'] as [BundledTheme, BundledTheme];
 
 interface ProjectChatProps {
     projectId: string
@@ -233,7 +237,13 @@ export function ProjectChat({ projectId }: ProjectChatProps) {
                                                     ? "bg-primary text-primary-foreground"
                                                     : "bg-muted"
                                             )}>
-                                                {msg.content}
+                                                {msg.type === 'ai' ? (
+                                                    <Streamdown shikiTheme={themes}>
+                                                        {msg.content}
+                                                    </Streamdown>
+                                                ) : (
+                                                    msg.content
+                                                )}
                                             </div>
                                         </div>
                                     ))}
