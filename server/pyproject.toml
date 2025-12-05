@@ -54,6 +54,9 @@ dependencies = [
     "pylint>=4.0.2",
     "langgraph-checkpoint-postgres>=3.0.1",
     "psycopg[binary]>=3.3.1",
+    "langchain-community>=0.4.1",
+    "jsonschema>=4.25.1",
+    "faiss-cpu>=1.13.1",
 ]
 
 [project.optional-dependencies]
