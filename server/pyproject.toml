@@ -1,0 +1,266 @@
+[project]
+name = "ai-agent-platform"
+version = "1.0.0"
+description = "AI Agent Platform with FastAPI, LangChain, LangGraph, and comprehensive observability"
+authors = [
+    {name = "Your Team", email = "team@example.com"}
+]
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    # Web Framework
+    "fastapi>=0.109.0",
+    "uvicorn[standard]>=0.27.0",
+    "python-multipart>=0.0.6",
+    # Agent Framework
+    "langchain>=0.1.0",
+    "langchain-openai>=0.0.5",
+    "langgraph>=0.0.20",
+    "langfuse>=3.0.0",
+    # Database
+    "sqlalchemy[asyncio]>=2.0.25",
+    "asyncpg>=0.29.0",
+    "alembic>=1.13.1",
+    "psycopg2-binary>=2.9.9",
+    # Vector Database
+    "qdrant-client>=1.7.0",
+    # Cache
+    "redis[hiredis]>=5.0.1",
+    # Authentication & Security
+    "python-jose[cryptography]>=3.3.0",
+    "passlib[bcrypt]>=1.7.4",
+    "bcrypt==4.3.0",
+    # Validation
+    "pydantic>=2.5.3",
+    "pydantic-settings>=2.1.0",
+    "email-validator>=2.1.0",
+    # OpenAI
+    "openai>=1.10.0",
+    # Monitoring & Observability
+    "prometheus-client>=0.19.0",
+    "prometheus-fastapi-instrumentator>=6.1.0",
+    # Utilities
+    "python-dotenv>=1.0.0",
+    "jinja2>=3.1.3",
+    "httpx>=0.26.0",
+    "aiofiles>=23.2.1",
+    # Document Processing
+    "pymupdf>=1.26.6",
+    "python-docx>=1.1.0",
+    "python-magic>=0.4.27",
+    "tiktoken>=0.5.2",
+    # Logging
+    "structlog>=24.1.0",
+    "pylint>=4.0.2",
+    "langgraph-checkpoint-postgres>=3.0.1",
+    "psycopg[binary]>=3.3.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    # Testing
+    "pytest>=7.4.4",
+    "pytest-asyncio>=0.23.3",
+    "pytest-cov>=4.1.0",
+    "pytest-mock>=3.12.0",
+    
+    # Code Quality & Linting
+    "pylint>=3.0.3",
+    "black>=24.1.1",
+    "isort>=5.13.2",
+    "mypy>=1.8.0",
+    "bandit>=1.7.6",
+    
+    # Pre-commit hooks
+    "pre-commit>=3.6.0",
+    
+    # Development
+    "ipython>=8.20.0",
+    "ipdb>=0.13.13",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.black]
+line-length = 100
+target-version = ['py311']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 100
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+ensure_newline_before_comments = true
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = "-ra -q --strict-markers --cov=app --cov-report=term-missing --cov-report=html"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+asyncio_mode = "auto"
+markers = [
+    "unit: Unit tests",
+    "integration: Integration tests",
+    "slow: Slow running tests",
+    "requires_db: Tests that require database",
+    "requires_redis: Tests that require Redis",
+    "requires_qdrant: Tests that require Qdrant",
+]
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+module = [
+    "langchain.*",
+    "langgraph.*",
+    "qdrant_client.*",
+    "redis.*",
+]
+ignore_missing_imports = true
+
+[tool.coverage.run]
+source = ["app"]
+omit = [
+    "*/tests/*",
+    "*/test_*.py",
+    "*/__init__.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "@abstractmethod",
+]
+
+[tool.pylint.main]
+# Python code to execute, usually for sys.path manipulation
+init-hook = 'import sys; sys.path.append(".")'
+
+# Files or directories to be skipped
+ignore = ["tests", "alembic/versions", ".venv", "venv"]
+
+# Use multiple processes to speed up Pylint
+jobs = 0
+
+# Pickle collected data for later comparisons
+persistent = true
+
+# List of plugins
+load-plugins = []
+
+[tool.pylint.messages_control]
+# Disable specific warnings
+disable = [
+    "C0111",  # missing-docstring
+    "C0103",  # invalid-name
+    "R0903",  # too-few-public-methods
+    "R0913",  # too-many-arguments
+    "W0212",  # protected-access
+    "C0301",  # line-too-long (handled by black)
+    "R0801",  # duplicate-code
+    "W0511",  # fixme
+]
+
+[tool.pylint.format]
+# Maximum number of characters on a single line
+max-line-length = 100
+
+# Maximum number of lines in a module
+max-module-lines = 1000
+
+[tool.pylint.basic]
+# Good variable names
+good-names = ["i", "j", "k", "ex", "Run", "_", "id", "db"]
+
+# Regular expression matching correct function names
+function-rgx = "[a-z_][a-z0-9_]{2,30}$"
+
+# Regular expression matching correct variable names
+variable-rgx = "[a-z_][a-z0-9_]{2,30}$"
+
+# Regular expression matching correct constant names
+const-rgx = "(([A-Z_][A-Z0-9_]*)|(__.*__))$"
+
+# Regular expression matching correct attribute names
+attr-rgx = "[a-z_][a-z0-9_]{2,30}$"
+
+# Regular expression matching correct argument names
+argument-rgx = "[a-z_][a-z0-9_]{2,30}$"
+
+[tool.pylint.design]
+# Maximum number of arguments for function / method
+max-args = 7
+
+# Maximum number of attributes for a class
+max-attributes = 10
+
+# Maximum number of boolean expressions in an if statement
+max-bool-expr = 5
+
+# Maximum number of branch for function / method body
+max-branches = 12
+
+# Maximum number of locals for function / method body
+max-locals = 15
+
+# Maximum number of parents for a class
+max-parents = 7
+
+# Maximum number of public methods for a class
+max-public-methods = 20
+
+# Maximum number of return / yield for function / method body
+max-returns = 6
+
+# Maximum number of statements in function / method body
+max-statements = 50
+
+[tool.pylint.similarities]
+# Minimum lines number of a similarity
+min-similarity-lines = 4
+
+# Ignore comments when computing similarities
+ignore-comments = true
+
+# Ignore docstrings when computing similarities
+ignore-docstrings = true
+
+# Ignore imports when computing similarities
+ignore-imports = true
+
+[tool.bandit]
+exclude_dirs = ["tests", "alembic/versions"]
+skips = ["B101", "B601"]

@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+.venv/
+venv/
+
+# Build outputs
+dist/
+build/
+*.egg-info/
+
+# Cache
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+__pycache__/
+
+# Logs
+*.log
+
+# Database
+*.db
+*.sqlite
+
+# Poetry
+poetry.lock
+
+# Alembic
+alembic/versions/*.py
+
+# Docker
+docker-compose.override.yml
+
+# Data
+prometheus_data/
+grafana_data/
+postgres_data/
+redis_data/
+qdrant_data/

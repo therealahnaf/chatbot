@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    Test
+
+    <!-- Chat Widget Embed Code -->
+    <div id="chat-widget-5c9dfd35-286f-45ef-847a-f0158e169134"></div>
+    <script>
+      (function () {
+        // Optional: Set custom API base URL (defaults to http://localhost:8000)
+        // window.CHAT_WIDGET_API_BASE_URL = 'https://your-api-domain.com';
+
+        // Load widget script
+        var script = document.createElement("script");
+        script.src = "http://localhost:5173/chat-widget.js";
+        script.async = true;
+        script.onload = function () {
+          if (window.ChatWidget) {
+            // Initialize widget by ID - config will be fetched from API
+            window.ChatWidget.init("5c9dfd35-286f-45ef-847a-f0158e169134");
+          }
+        };
+        document.body.appendChild(script);
+      })();
+    </script>
+  </body>
+</html>
