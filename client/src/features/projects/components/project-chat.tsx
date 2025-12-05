@@ -39,6 +39,12 @@ export function ProjectChat({ projectId }: ProjectChatProps) {
         }
     }, [historyData])
 
+    // Debugging messages
+    useEffect(() => {
+        console.log("Current messages:", messages)
+        messages.forEach(m => console.log("Message type:", m.type))
+    }, [messages])
+
     // Fetch history when threadId is set via dialog
     useEffect(() => {
         if (threadId && !isDialogOpen) {
@@ -202,30 +208,35 @@ export function ProjectChat({ projectId }: ProjectChatProps) {
                                         Start a conversation...
                                     </div>
                                 )}
-                                {messages.map((msg, index) => (
-                                    <div
-                                        key={index}
-                                        className={cn(
-                                            "flex items-start gap-2 max-w-[80%]",
-                                            msg.type === 'human' ? "ml-auto flex-row-reverse" : "mr-auto"
-                                        )}
-                                    >
-                                        <div className={cn(
-                                            "w-8 h-8 rounded-full flex items-center justify-center shrink-0",
-                                            msg.type === 'human' ? "bg-primary text-primary-foreground" : "bg-muted"
-                                        )}>
-                                            {msg.type === 'human' ? <User size={16} /> : <Bot size={16} />}
+                                {messages
+                                    .filter(msg => {
+                                        console.log('Filtering message:', msg.type, msg.content.substring(0, 20));
+                                        return msg.type === 'human' || msg.type === 'ai';
+                                    })
+                                    .map((msg, index) => (
+                                        <div
+                                            key={index}
+                                            className={cn(
+                                                "flex items-start gap-2 max-w-[80%]",
+                                                msg.type === 'human' ? "ml-auto flex-row-reverse" : "mr-auto"
+                                            )}
+                                        >
+                                            <div className={cn(
+                                                "w-8 h-8 rounded-full flex items-center justify-center shrink-0",
+                                                msg.type === 'human' ? "bg-primary text-primary-foreground" : "bg-muted"
+                                            )}>
+                                                {msg.type === 'human' ? <User size={16} /> : <Bot size={16} />}
+                                            </div>
+                                            <div className={cn(
+                                                "rounded-lg p-3 text-sm whitespace-pre-wrap",
+                                                msg.type === 'human'
+                                                    ? "bg-primary text-primary-foreground"
+                                                    : "bg-muted"
+                                            )}>
+                                                {msg.content}
+                                            </div>
                                         </div>
-                                        <div className={cn(
-                                            "rounded-lg p-3 text-sm whitespace-pre-wrap",
-                                            msg.type === 'human'
-                                                ? "bg-primary text-primary-foreground"
-                                                : "bg-muted"
-                                        )}>
-                                            {msg.content}
-                                        </div>
-                                    </div>
-                                ))}
+                                    ))}
                             </div>
                         </ScrollArea>
                     </CardContent>

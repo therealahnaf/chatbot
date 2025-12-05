@@ -54,8 +54,6 @@ def run_agent_b(state: MainState):
     updates = {}
     if "final_agent_b_output" in result and result["final_agent_b_output"]:
         updates["agent_b_output"] = result["final_agent_b_output"]
-        # Optionally append a summary message to the main history
-        updates["messages"] = [AIMessage(content="Agent B has designed the content.")]
         
     return updates
 
@@ -89,7 +87,7 @@ def run_agent_c(state: MainState):
     updates = {}
     if "final_agent_c_output" in result and result["final_agent_c_output"]:
         updates["final_json"] = result["final_agent_c_output"]
-        updates["messages"] = [AIMessage(content=f"Final Survey JSON Generated:\n{result['final_agent_c_output']}")]
+        updates["messages"] = [AIMessage(content=f"Your survey has been generated and rendered!")]
         # Clear previous validation error if any
         updates["validation_error"] = None
         
