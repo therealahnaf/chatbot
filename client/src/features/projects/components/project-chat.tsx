@@ -202,7 +202,7 @@ export function ProjectChat({ projectId }: ProjectChatProps) {
                                         Start a conversation...
                                     </div>
                                 )}
-                                {messages.filter(msg => msg.type !== 'tool' && !(msg.type === 'ai' && !msg.content)).map((msg, index) => (
+                                {messages.map((msg, index) => (
                                     <div
                                         key={index}
                                         className={cn(
