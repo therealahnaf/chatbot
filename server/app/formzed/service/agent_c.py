@@ -9,7 +9,19 @@ from langchain_openai import ChatOpenAI
 from langgraph.graph import END, START, StateGraph, MessagesState
 from langchain_core.tools import tool
 from langchain_core.messages import ToolMessage, SystemMessage, AIMessage, HumanMessage
+from langchain_community.vectorstores import FAISS
+from langchain_openai import OpenAIEmbeddings
 from app.formzed.service.schema_loader import get_schema_elements, resolve_reference
+
+# Load the vector database
+# vector_db is located at ../vector_db relative to this file
+DB_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "vector_db")
+try:
+    embeddings = OpenAIEmbeddings()
+    vector_db = FAISS.load_local(DB_PATH, embeddings, allow_dangerous_deserialization=True)
+except Exception as e:
+    print(f"Error loading vector database: {e}")
+    vector_db = None
 
 # --- State Definition ---
 class AgentCState(MessagesState):
@@ -41,7 +53,22 @@ def resolve_schema_reference_tool(reference: str):
         return result["error"]
     return json.dumps(result, indent=2)
 
-tools = [get_schema_elements_tool, resolve_schema_reference_tool]
+@tool
+def search_schema_index(query: str):
+    """
+    Search the master index (documentation) for information about SurveyJS elements, properties, and concepts.
+    Use this to understand WHAT elements are available and HOW they work before using them.
+    """
+    if vector_db is None:
+        return "Error: Vector database is not available."
+    
+    try:
+        results = vector_db.similarity_search(query, k=3)
+        return "\n\n---\n\n".join([doc.page_content for doc in results])
+    except Exception as e:
+        return f"Error during search: {e}"
+
+tools = [get_schema_elements_tool, resolve_schema_reference_tool, search_schema_index]
 
 # --- Model ---
 base_model = ChatOpenAI(model="gpt-4o-mini", temperature=0)
@@ -56,8 +83,9 @@ Your goal is to define the **Identifier Strings** for the survey based on the in
 User requirements and content outline.
 
 **Task:**
-1.  **Define Page IDs:** List every page `name` (e.g., "page_intro", "page_details").
-2.  **Define Question IDs:** List every question `name` (e.g., "q_name", "q_email").
+1.  **Search & Discover:** Use `search_schema_index` to understand the elements you might need (e.g., "what is a page?", "question types for contact info").
+2.  **Define Page IDs:** List every page `name` (e.g., "page_intro", "page_details").
+3.  **Define Question IDs:** List every question `name` (e.g., "q_name", "q_email").
     *   Constraint: Names must be unique.
     *   Convention: Use prefixes like `q_` for questions and `page_` for pages.
 
@@ -74,7 +102,7 @@ Namespace Map (IDs) from Phase 1.
 
 **Task:**
 1.  Create the Root Object.
-2.  Set `mode` (usually "display") and `questionsOnPageMode` (usually "standard").
+2.  Set `mode` to "edit" (so the user can fill it out) and `questionsOnPageMode` (usually "standard").
 3.  Initialize empty arrays for dependency containers: `pages`, `triggers`, `calculatedValues`.
 
 **Output:**
@@ -95,9 +123,10 @@ Content requirements.
     *   Define `title` and `choices` (for dropdowns/radios).
     *   **CRITICAL:** Do NOT add `visibleIf`, `enableIf`, `requiredIf`, `triggers`, or `validators` yet. Focus only on existence and structure.
 
-**Tools:**
-Use `get_schema_elements_tool` to check available types.
-Use `resolve_schema_reference_tool` to check properties of specific elements.
+**Tools Strategy:**
+1.  **Search First:** Use `search_schema_index` to find properties of elements (e.g., "properties of text question", "how to configure rating").
+2.  **Validate:** Use `resolve_schema_reference_tool` to check the actual schema definition (e.g., `#text`) to ensure your generated JSON structure matches the schema's expectations.
+3.  **Check Available:** Use `get_schema_elements_tool` if you need a list of types.
 
 **Output:**
 Return the updated JSON with pages and elements populated.
@@ -136,6 +165,22 @@ Wired JSON (Phase 4).
 
 **Output:**
 Return the FINAL valid SurveyJS JSON string.
+"""
+
+FIX_AGENT_PROMPT = """You are the Schema Fixing Agent.
+Your goal is to fix the validation errors in the SurveyJS JSON.
+
+**Input:**
+1. The invalid JSON.
+2. The validation error message.
+
+**Task:**
+1.  **Analyze:** Understand the validation error (e.g., "invalid type", "missing property").
+2.  **Search & Resolve:** Use `search_schema_index` and `resolve_schema_reference_tool` to understand the correct schema definition for the failing element.
+3.  **Fix:** Correct the JSON to comply with the schema.
+
+**Output:**
+Return the FIXED valid SurveyJS JSON string.
 """
 
 # --- Nodes ---
@@ -214,6 +259,8 @@ def execute_tools_loop(messages, model, max_iterations=10):
                 res = get_schema_elements_tool.invoke({})
             elif tc["name"] == "resolve_schema_reference_tool":
                 res = resolve_schema_reference_tool.invoke(tc["args"])
+            elif tc["name"] == "search_schema_index":
+                res = search_schema_index.invoke(tc["args"])
             else:
                 res = "Unknown tool"
             tool_outputs.append(ToolMessage(content=str(res), tool_call_id=tc["id"]))
@@ -323,7 +370,51 @@ def run_phase_5(state: AgentCState):
     except Exception as e:
         print("JSON parsing failed:", str(e))
         print("Content that failed:", content)
-        return {"messages": [response]}
+        # Return content anyway so validation node can catch it (or main graph can see it failed)
+        return {"final_agent_c_output": content, "messages": [response]}
+
+# --- Fixing Agent Node ---
+def run_fix_agent(state: AgentCState):
+    print("--- Agent C: Fixing Agent ---")
+    messages = state["messages"]
+    
+    # Add the system prompt for the fixing agent
+    # We prepend it or append it? 
+    # The messages list contains the HumanMessage with the error.
+    # We should probably construct a new list for the model call to ensure the SystemMessage is first or relevant.
+    
+    # If we just append, the history might be weird if it's empty.
+    # Let's create a new list starting with SystemMessage, then the HumanMessage from state.
+    
+    # Check if there are existing messages
+    existing_messages = state.get("messages", [])
+    
+    # Construct prompt messages
+    prompt_messages = [SystemMessage(content=FIX_AGENT_PROMPT)] + existing_messages
+    
+    # Run the tool loop
+    new_messages, final_response = execute_tools_loop(prompt_messages, model_with_tools)
+    print("Fixing Agent response:", final_response.content)
+    
+    try:
+        content = extract_json(final_response.content)
+        # Validate it's JSON
+        parsed_json = json.loads(content)
+        print("Fixed JSON content:", parsed_json)
+        return {"final_agent_c_output": content, "messages": new_messages}
+    except Exception as e:
+        print("Fixing Agent failed to parse JSON:", str(e))
+        # Return content anyway
+        return {"final_agent_c_output": content, "messages": new_messages}
+
+def route_start(state: AgentCState):
+    messages = state.get("messages", [])
+    if messages and isinstance(messages[-1], HumanMessage):
+        content = messages[-1].content
+        # Check for the specific error message format from main_graph
+        if "The previous JSON was invalid" in content:
+            return "fix_agent"
+    return "phase_1"
 
 # --- Graph ---
 
@@ -335,12 +426,14 @@ def get_graph(checkpointer=None):
     workflow.add_node("phase_3", run_phase_3)
     workflow.add_node("phase_4", run_phase_4)
     workflow.add_node("phase_5", run_phase_5)
+    workflow.add_node("fix_agent", run_fix_agent)
     
-    workflow.add_edge(START, "phase_1")
+    workflow.add_conditional_edges(START, route_start)
     workflow.add_edge("phase_1", "phase_2")
     workflow.add_edge("phase_2", "phase_3")
     workflow.add_edge("phase_3", "phase_4")
     workflow.add_edge("phase_4", "phase_5")
     workflow.add_edge("phase_5", END)
+    workflow.add_edge("fix_agent", END)
     
     return workflow.compile(checkpointer=checkpointer)

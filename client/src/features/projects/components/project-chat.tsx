@@ -8,6 +8,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 import { chatApi, type ChatMessage } from '@/lib/api/chat.api'
 import { cn } from '@/lib/utils'
+import StandaloneSurveyRenderer from './StandaloneSurveyRenderer'
 
 interface ProjectChatProps {
     projectId: string
@@ -21,6 +22,7 @@ export function ProjectChat({ projectId }: ProjectChatProps) {
     const [tempThreadId, setTempThreadId] = useState('')
     const [socket, setSocket] = useState<WebSocket | null>(null)
     const [isConnected, setIsConnected] = useState(false)
+    const [surveyJson, setSurveyJson] = useState<any>(null)
     const scrollRef = useRef<HTMLDivElement>(null)
 
     // Query for history (still useful for initial load)
@@ -68,7 +70,19 @@ export function ProjectChat({ projectId }: ProjectChatProps) {
                 const data = JSON.parse(event.data)
                 if (data.history) {
                     setMessages(data.history)
-                } else if (data.error) {
+                }
+
+                if (data.final_json) {
+                    console.log("Received final JSON:", data.final_json)
+                    try {
+                        const parsed = typeof data.final_json === 'string' ? JSON.parse(data.final_json) : data.final_json
+                        setSurveyJson(parsed)
+                    } catch (e) {
+                        console.error("Failed to parse final JSON:", e)
+                    }
+                }
+
+                if (data.error) {
                     console.error("WebSocket error:", data.error)
                 }
             } catch (e) {
@@ -157,82 +171,103 @@ export function ProjectChat({ projectId }: ProjectChatProps) {
                 </DialogContent>
             </Dialog>
 
-            <Card className="h-[600px] flex flex-col">
-                <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                        <CardTitle>Chat with Formzed</CardTitle>
-                        <div className="flex items-center gap-2">
-                            <div className="text-sm text-muted-foreground flex items-center gap-2">
-                                <span className={cn("w-2 h-2 rounded-full", isConnected ? "bg-green-500" : "bg-red-500")} />
-                                Thread: {threadId || 'New'}
+            <div className="flex h-[600px] gap-4">
+                <Card className={cn("flex flex-col", surveyJson ? "w-1/2" : "w-full")}>
+                    <CardHeader className="pb-3">
+                        <div className="flex items-center justify-between">
+                            <CardTitle>Chat with Formzed</CardTitle>
+                            <div className="flex items-center gap-2">
+                                <div className="text-sm text-muted-foreground flex items-center gap-2">
+                                    <span className={cn("w-2 h-2 rounded-full", isConnected ? "bg-green-500" : "bg-red-500")} />
+                                    Thread: {threadId || 'New'}
+                                </div>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => {
+                                        setTempThreadId(threadId)
+                                        setIsDialogOpen(true)
+                                    }}
+                                >
+                                    <Settings className="h-4 w-4" />
+                                </Button>
                             </div>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="flex-1 p-0 overflow-hidden">
+                        <ScrollArea className="h-full p-4" ref={scrollRef}>
+                            <div className="space-y-4">
+                                {messages.length === 0 && (
+                                    <div className="text-center text-muted-foreground py-8">
+                                        Start a conversation...
+                                    </div>
+                                )}
+                                {messages.filter(msg => msg.type !== 'tool' && !(msg.type === 'ai' && !msg.content)).map((msg, index) => (
+                                    <div
+                                        key={index}
+                                        className={cn(
+                                            "flex items-start gap-2 max-w-[80%]",
+                                            msg.type === 'human' ? "ml-auto flex-row-reverse" : "mr-auto"
+                                        )}
+                                    >
+                                        <div className={cn(
+                                            "w-8 h-8 rounded-full flex items-center justify-center shrink-0",
+                                            msg.type === 'human' ? "bg-primary text-primary-foreground" : "bg-muted"
+                                        )}>
+                                            {msg.type === 'human' ? <User size={16} /> : <Bot size={16} />}
+                                        </div>
+                                        <div className={cn(
+                                            "rounded-lg p-3 text-sm whitespace-pre-wrap",
+                                            msg.type === 'human'
+                                                ? "bg-primary text-primary-foreground"
+                                                : "bg-muted"
+                                        )}>
+                                            {msg.content}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </ScrollArea>
+                    </CardContent>
+                    <CardFooter className="p-4 pt-0">
+                        <div className="flex w-full gap-2">
+                            <Input
+                                placeholder="Type your message..."
+                                value={input}
+                                onChange={(e) => setInput(e.target.value)}
+                                onKeyDown={handleKeyDown}
+                                disabled={!isConnected}
+                            />
                             <Button
-                                variant="ghost"
+                                onClick={handleSend}
+                                disabled={!isConnected || !input.trim()}
                                 size="icon"
-                                onClick={() => {
-                                    setTempThreadId(threadId)
-                                    setIsDialogOpen(true)
-                                }}
                             >
-                                <Settings className="h-4 w-4" />
+                                <Send size={18} />
                             </Button>
                         </div>
-                    </div>
-                </CardHeader>
-                <CardContent className="flex-1 p-0 overflow-hidden">
-                    <ScrollArea className="h-full p-4" ref={scrollRef}>
-                        <div className="space-y-4">
-                            {messages.length === 0 && (
-                                <div className="text-center text-muted-foreground py-8">
-                                    Start a conversation...
-                                </div>
-                            )}
-                            {messages.map((msg, index) => (
-                                <div
-                                    key={index}
-                                    className={cn(
-                                        "flex items-start gap-2 max-w-[80%]",
-                                        msg.type === 'human' ? "ml-auto flex-row-reverse" : "mr-auto"
-                                    )}
-                                >
-                                    <div className={cn(
-                                        "w-8 h-8 rounded-full flex items-center justify-center shrink-0",
-                                        msg.type === 'human' ? "bg-primary text-primary-foreground" : "bg-muted"
-                                    )}>
-                                        {msg.type === 'human' ? <User size={16} /> : <Bot size={16} />}
-                                    </div>
-                                    <div className={cn(
-                                        "rounded-lg p-3 text-sm whitespace-pre-wrap",
-                                        msg.type === 'human'
-                                            ? "bg-primary text-primary-foreground"
-                                            : "bg-muted"
-                                    )}>
-                                        {msg.content}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </ScrollArea>
-                </CardContent>
-                <CardFooter className="p-4 pt-0">
-                    <div className="flex w-full gap-2">
-                        <Input
-                            placeholder="Type your message..."
-                            value={input}
-                            onChange={(e) => setInput(e.target.value)}
-                            onKeyDown={handleKeyDown}
-                            disabled={!isConnected}
-                        />
-                        <Button
-                            onClick={handleSend}
-                            disabled={!isConnected || !input.trim()}
-                            size="icon"
-                        >
-                            <Send size={18} />
-                        </Button>
-                    </div>
-                </CardFooter>
-            </Card>
+                    </CardFooter>
+                </Card>
+
+                {surveyJson && (
+                    <Card className="w-1/2 flex flex-col">
+                        <CardHeader className="pb-3">
+                            <CardTitle>Survey Preview</CardTitle>
+                            <div className="text-xs text-muted-foreground">
+                                JSON Loaded: {Object.keys(surveyJson).length} keys
+                            </div>
+                        </CardHeader>
+                        <CardContent className="flex-1 p-0 overflow-hidden relative">
+                            <div className="absolute inset-0 overflow-auto">
+                                <StandaloneSurveyRenderer
+                                    json={surveyJson}
+                                    onComplete={(data) => console.log("Survey Completed:", data)}
+                                />
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
+            </div>
         </>
     )
 }

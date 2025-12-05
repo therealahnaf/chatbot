@@ -1,7 +1,7 @@
 import apiClient from '@/lib/api-client'
 
 export interface ChatMessage {
-    type: 'human' | 'ai' | 'unknown'
+    type: 'human' | 'ai' | 'tool' | 'unknown'
     content: string
 }
 

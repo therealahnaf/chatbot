@@ -68,10 +68,14 @@ def chat(
                 content = msg.content if hasattr(msg, "content") else str(msg)
             history.append({"type": msg_type, "content": content})
             
+        # Extract final_json if available
+        final_json = final_state.get("final_json")
+
         return ChatResponse(
             response=response_text,
             thread_id=thread_id,
-            history=history
+            history=history,
+            final_json=final_json
         )
         
     except Exception as e:
@@ -160,12 +164,19 @@ async def websocket_endpoint(websocket: WebSocket, thread_id: str):
                         content = msg.content if hasattr(msg, "content") else str(msg)
                     history.append({"type": msg_type, "content": content})
                 
+                # Extract final_json if available
+                final_json = final_state.get("final_json")
+                print(f"DEBUG: final_state keys: {final_state.keys()}")
+                print(f"DEBUG: final_json type: {type(final_json)}")
+                print(f"DEBUG: final_json value (first 100 chars): {str(final_json)[:100]}")
+
                 import json
                 response_data = {
                     "type": "message",
                     "content": response_text,
                     "history": history,
-                    "thread_id": thread_id
+                    "thread_id": thread_id,
+                    "final_json": final_json
                 }
                 await websocket.send_text(json.dumps(response_data))
                 

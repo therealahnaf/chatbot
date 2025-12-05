@@ -90,14 +90,14 @@
         "showNavigationButtons": {
             "type": [
                 "string",
-                "numeric",
+                "number",
                 "boolean"
             ]
         },
         "navigationButtonsLocation": {
             "type": [
                 "string",
-                "numeric",
+                "number",
                 "boolean"
             ],
             "enum": [
@@ -206,7 +206,7 @@
         "clearInvisibleValues": {
             "type": [
                 "string",
-                "numeric",
+                "number",
                 "boolean"
             ],
             "enum": [
@@ -225,14 +225,14 @@
         "logoWidth": {
             "type": [
                 "string",
-                "numeric",
+                "number",
                 "boolean"
             ]
         },
         "logoHeight": {
             "type": [
                 "string",
-                "numeric",
+                "number",
                 "boolean"
             ]
         },
@@ -337,7 +337,10 @@
             ]
         },
         "showProgressBar": {
-            "type": "boolean"
+            "type": [
+                "boolean",
+                "string"
+            ]
         },
         "progressBarLocation": {
             "type": "string",
@@ -444,7 +447,7 @@
         "showPreviewBeforeComplete": {
             "type": [
                 "string",
-                "numeric",
+                "number",
                 "boolean"
             ]
         },
@@ -499,7 +502,7 @@
             "type": "string"
         },
         "timeLimit": {
-            "type": "number"
+            "type": ["number", "null"]
         },
         "maxTimeToFinish": {
             "type": "number"
@@ -543,7 +546,7 @@
                             "type": "number"
                         },
                         "page": {
-                            "type": "IPage"
+                            "$ref": "#page"
                         },
                         "showNumber": {
                             "type": "boolean"
@@ -583,7 +586,7 @@
                 {
                     "properties": {
                         "page": {
-                            "type": "IPage"
+                            "$ref": "#page"
                         },
                         "showNumber": {
                             "type": "boolean"
@@ -622,7 +625,9 @@
             "properties": {
                 "gridLayoutColumns": {
                     "type": "array",
-                    "items": "PanelLayoutColumnModel"
+                    "items": {
+                        "$ref": "#/definitions/PanelLayoutColumnModel"
+                    }
                 },
                 "questionOrder": {
                     "type": "string",
@@ -831,7 +836,7 @@
                     "type": "string"
                 },
                 "page": {
-                    "type": "IPage"
+                    "$ref": "#page"
                 },
                 "visible": {
                     "type": "boolean"
@@ -920,14 +925,14 @@
                 "defaultValue": {
                     "type": [
                         "string",
-                        "numeric",
+                        "number",
                         "boolean"
                     ]
                 },
                 "defaultValueExpression": {
                     "type": [
                         "string",
-                        "numeric",
+                        "number",
                         "boolean"
                     ]
                 },
@@ -943,7 +948,7 @@
                 "correctAnswer": {
                     "type": [
                         "string",
-                        "numeric",
+                        "number",
                         "boolean"
                     ]
                 },
@@ -1075,9 +1080,7 @@
                             "type": "string"
                         },
                         "choicesByUrl": {
-                            "type": {
-                                "$href": "#choicesByUrl"
-                            }
+                            "$ref": "#choicesByUrl"
                         },
                         "choices": {
                             "type": "array",
@@ -1106,7 +1109,7 @@
                         "storeOthersAsComment": {
                             "type": [
                                 "string",
-                                "numeric",
+                                "number",
                                 "boolean"
                             ],
                             "enum": [
@@ -1185,11 +1188,15 @@
             "properties": {
                 "pages": {
                     "type": "array",
-                    "items": "string"
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "questions": {
                     "type": "array",
-                    "items": "string"
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },
@@ -1203,7 +1210,7 @@
                 "setValue": {
                     "type": [
                         "string",
-                        "numeric",
+                        "number",
                         "boolean"
                     ]
                 },
@@ -1827,7 +1834,7 @@
                     ]
                 },
                 "maskSettings": {
-                    "type": [
+                    "anyOf": [
                         {
                             "$href": "#datetimemask"
                         },
@@ -2418,7 +2425,10 @@
                             ]
                         },
                         "showProgressBar": {
-                            "type": "boolean"
+                            "type": [
+                                "boolean",
+                                "string"
+                            ]
                         },
                         "progressBarLocation": {
                             "type": [
@@ -2445,7 +2455,7 @@
                         "defaultPanelValue": {
                             "type": [
                                 "string",
-                                "numeric",
+                                "number",
                                 "boolean"
                             ]
                         },
@@ -2491,7 +2501,9 @@
                 },
                 "acceptedCategories": {
                     "type": "array",
-                    "items": "string",
+                    "items": {
+                        "type": "string"
+                    },
                     "enum": [
                         "image",
                         "video",
@@ -2839,7 +2851,7 @@
                     ]
                 },
                 "maskSettings": {
-                    "type": [
+                    "anyOf": [
                         {
                             "$href": "#datetimemask"
                         },
@@ -2954,7 +2966,9 @@
                 },
                 "dataList": {
                     "type": "array",
-                    "items": "string"
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },
@@ -3263,7 +3277,7 @@
                         "defaultRowValue": {
                             "type": [
                                 "string",
-                                "numeric",
+                                "number",
                                 "boolean"
                             ]
                         },
@@ -3402,7 +3416,7 @@
                             "type": "boolean"
                         },
                         "cells": {
-                            "type": "MatrixCells"
+                            "type": "object"
                         }
                     }
                 }
@@ -3461,14 +3475,14 @@
                         "defaultValue": {
                             "type": [
                                 "string",
-                                "numeric",
+                                "number",
                                 "boolean"
                             ]
                         },
                         "correctAnswer": {
                             "type": [
                                 "string",
-                                "numeric",
+                                "number",
                                 "boolean"
                             ]
                         },
@@ -3561,14 +3575,14 @@
                         "defaultValue": {
                             "type": [
                                 "string",
-                                "numeric",
+                                "number",
                                 "boolean"
                             ]
                         },
                         "correctAnswer": {
                             "type": [
                                 "string",
-                                "numeric",
+                                "number",
                                 "boolean"
                             ]
                         },
@@ -3679,14 +3693,14 @@
                         "defaultValue": {
                             "type": [
                                 "string",
-                                "numeric",
+                                "number",
                                 "boolean"
                             ]
                         },
                         "correctAnswer": {
                             "type": [
                                 "string",
-                                "numeric",
+                                "number",
                                 "boolean"
                             ]
                         },
@@ -3929,7 +3943,7 @@
                         "defaultValue": {
                             "type": [
                                 "string",
-                                "numeric",
+                                "number",
                                 "boolean"
                             ]
                         },
@@ -3951,14 +3965,14 @@
                         "valueTrue": {
                             "type": [
                                 "string",
-                                "numeric",
+                                "number",
                                 "boolean"
                             ]
                         },
                         "valueFalse": {
                             "type": [
                                 "string",
-                                "numeric",
+                                "number",
                                 "boolean"
                             ]
                         }

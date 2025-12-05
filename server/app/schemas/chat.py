@@ -9,3 +9,4 @@ class ChatResponse(BaseModel):
     response: str
     thread_id: str
     history: list[dict[str, Any]]
+    final_json: Optional[str] = None
