@@ -344,22 +344,7 @@ export function ProjectChat({ projectId }: ProjectChatProps) {
                 </Card>
 
                 {surveyJson && (
-                    <Card className="w-1/2 flex flex-col shrink-0">
-                        <CardHeader className="pb-3">
-                            <div className="flex items-center justify-between">
-                                <CardTitle>Survey Preview</CardTitle>
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => setIsSurveyFullScreen(true)}
-                                >
-                                    <Maximize2 className="h-4 w-4" />
-                                </Button>
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                                JSON Loaded: {Object.keys(surveyJson).length} keys
-                            </div>
-                        </CardHeader>
+                    <Card className="w-1/2 flex flex-col shrink-0 border-2 border-secondary">
                         <CardContent className="flex-1 p-0 overflow-hidden relative">
                             <div className="absolute inset-0 overflow-auto">
                                 <StandaloneSurveyRenderer
@@ -368,6 +353,13 @@ export function ProjectChat({ projectId }: ProjectChatProps) {
                                 />
                             </div>
                         </CardContent>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setIsSurveyFullScreen(true)}
+                        >
+                            <Maximize2 className="h-4 w-4" />
+                        </Button>
                     </Card>
                 )}
             </div>

@@ -3,17 +3,17 @@ from typing import TypedDict, Annotated, List, Dict, Any, Optional
 from langgraph.graph import StateGraph, END, START, MessagesState
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
 from app.formzed.service.agent_a import get_graph as get_agent_a_graph
-from app.formzed.service.agent_b import get_graph as get_agent_b_graph
 from app.formzed.service.agent_c import get_graph as get_agent_c_graph
+from app.formzed.service.agent_edit import get_graph as get_edit_graph
 from app.formzed.service.validator import validate_json
 
 # Define the overall graph state
 class MainState(MessagesState):
     # We track the outputs of each stage
     agent_a_output: Optional[str]
-    agent_b_output: Optional[str]
     final_json: Optional[str]
     validation_error: Optional[str]
+    did_edit: Optional[bool]
 
 # Node for Agent A
 def run_agent_a(state: MainState):
@@ -34,37 +34,14 @@ def run_agent_a(state: MainState):
         
     return updates
 
-# Node for Agent B
-def run_agent_b(state: MainState):
-    print("--- Running Agent B ---")
-    agent_b_graph = get_agent_b_graph()
-    
-    # Agent B needs the output from Agent A
-    outline = state.get("agent_a_output")
-    if not outline:
-        return {"messages": [AIMessage(content="Error: No outline provided by Agent A.")]}
-        
-    input_state = {
-        "messages": [], # Agent B starts fresh
-        "input_outline": outline
-    }
-    
-    result = agent_b_graph.invoke(input_state)
-    
-    updates = {}
-    if "final_agent_b_output" in result and result["final_agent_b_output"]:
-        updates["agent_b_output"] = result["final_agent_b_output"]
-        
-    return updates
-
 # Node for Agent C
 def run_agent_c(state: MainState):
     print("--- Running Agent C ---")
     agent_c_graph = get_agent_c_graph()
     
-    content_object = state.get("agent_b_output")
+    content_object = state.get("agent_a_output")
     if not content_object:
-        return {"messages": [AIMessage(content="Error: No content object provided by Agent B.")]}
+        return {"messages": [AIMessage(content="Error: No content object provided by Agent A.")]}
     
     # If there's a validation error, pass it to Agent C
     messages = []
@@ -87,7 +64,7 @@ def run_agent_c(state: MainState):
     updates = {}
     if "final_agent_c_output" in result and result["final_agent_c_output"]:
         updates["final_json"] = result["final_agent_c_output"]
-        updates["messages"] = [AIMessage(content=f"Your survey has been generated and rendered!")]
+        # updates["messages"] = [AIMessage(content=f"Your survey has been generated and rendered!")]
         # Clear previous validation error if any
         updates["validation_error"] = None
         
@@ -115,22 +92,47 @@ def run_validation(state: MainState):
         print(f"--- JSON Decode Error: {e} ---")
         return {"validation_error": f"Invalid JSON format: {e}"}
 
+# Node for Edit Agent
+def run_edit_agent(state: MainState):
+    print("--- Running Edit Agent ---")
+    edit_graph = get_edit_graph()
+    
+    # Pass state
+    input_state = {
+        "messages": state["messages"],
+        "final_json": state.get("final_json"),
+        "edit_plan": None, # Start fresh
+        "new_json": None
+    }
+    
+    result = edit_graph.invoke(input_state)
+    
+    updates = {
+        "messages": result["messages"],
+        "did_edit": False
+    }
+    
+    if result.get("new_json"):
+        print("--- Edit Agent produced new JSON ---")
+        updates["final_json"] = result["new_json"]
+        updates["did_edit"] = True
+        
+    return updates
+
 # Router logic for entry
 def route_entry(state: MainState):
     if state.get("final_json") and not state.get("validation_error"):
-        return END
+        return "edit_agent"
     if state.get("validation_error"):
         return "agent_c"
-    if state.get("agent_b_output"):
-        return "agent_c"
     if state.get("agent_a_output"):
-        return "agent_b"
+        return "agent_c"
     return "agent_a"
 
 # Router logic after Agent A
 def route_after_agent_a(state: MainState):
     if state.get("agent_a_output"):
-        return "agent_b"
+        return "agent_c"
     return END # Wait for user input
 
 # Router logic after Agent C
@@ -143,15 +145,21 @@ def route_after_agent_c(state: MainState):
 def route_after_validation(state: MainState):
     if state.get("validation_error"):
         return "agent_c"
+    return "edit_agent"
+
+# Router logic after Edit Agent
+def route_after_edit_agent(state: MainState):
+    if state.get("did_edit"):
+        return "validation"
     return END
 
 def get_main_graph(checkpointer=None):
     workflow = StateGraph(MainState)
     
     workflow.add_node("agent_a", run_agent_a)
-    workflow.add_node("agent_b", run_agent_b)
     workflow.add_node("agent_c", run_agent_c)
     workflow.add_node("validation", run_validation)
+    workflow.add_node("edit_agent", run_edit_agent)
     
     # Entry point routing
     workflow.add_conditional_edges(START, route_entry)
@@ -159,13 +167,13 @@ def get_main_graph(checkpointer=None):
     # Edge from Agent A
     workflow.add_conditional_edges("agent_a", route_after_agent_a)
     
-    # Edge from Agent B
-    workflow.add_edge("agent_b", "agent_c")
-    
     # Edge from Agent C
     workflow.add_conditional_edges("agent_c", route_after_agent_c)
     
     # Edge from Validation
     workflow.add_conditional_edges("validation", route_after_validation)
+
+    # Edge from Edit Agent
+    workflow.add_conditional_edges("edit_agent", route_after_edit_agent)
     
     return workflow.compile(checkpointer=checkpointer)
