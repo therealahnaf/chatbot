@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_db
 from app.schemas.chat import ChatRequest, ChatResponse
 
-router = APIRouter(prefix="/chat", tags=["Chat"])
+router = APIRouter(prefix="/formzed-chat", tags=["Chat"])
 
 from app.formzed.service.main_graph import get_main_graph
 from langgraph.checkpoint.postgres import PostgresSaver
@@ -123,6 +123,27 @@ def get_history(
         if conn:
             conn.close()
 
+@router.get("/threads")
+def get_threads(conn = Depends(get_sync_db_connection)):
+    try:
+        # PostgresSaver uses a table named 'checkpoints' by default
+        # We need to query for distinct thread_ids
+        with conn.cursor() as cur:
+            cur.execute("SELECT DISTINCT thread_id FROM checkpoints")
+            rows = cur.fetchall()
+            # rows are dicts because of row_factory=dict_row in get_sync_db_connection
+            thread_ids = [row['thread_id'] for row in rows if row.get('thread_id')]
+            return {"threads": thread_ids}
+    except Exception as e:
+        print(f"Error getting threads: {e}")
+        # If table doesn't exist yet, return empty list
+        if "relation \"checkpoints\" does not exist" in str(e):
+            return {"threads": []}
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        if conn:
+            conn.close()
+
 @router.websocket("/ws/{thread_id}")
 async def websocket_endpoint(websocket: WebSocket, thread_id: str):
     await websocket.accept()
@@ -194,3 +215,5 @@ async def websocket_endpoint(websocket: WebSocket, thread_id: str):
         print(f"Client disconnected from thread {thread_id}")
     except Exception as e:
         print(f"WebSocket error: {e}")
+
+

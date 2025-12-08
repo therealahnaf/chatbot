@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Send, User, Bot, Settings } from 'lucide-react'
+import { Send, User, Bot, Settings, Maximize2, MessageSquare, Plus, PanelLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -27,7 +27,15 @@ export function ProjectChat({ projectId }: ProjectChatProps) {
     const [socket, setSocket] = useState<WebSocket | null>(null)
     const [isConnected, setIsConnected] = useState(false)
     const [surveyJson, setSurveyJson] = useState<any>(null)
+    const [isSurveyFullScreen, setIsSurveyFullScreen] = useState(false)
+    const [isSidebarOpen, setIsSidebarOpen] = useState(true)
     const scrollRef = useRef<HTMLDivElement>(null)
+
+    // Query for threads
+    const { data: threadsData, refetch: refetchThreads } = useQuery({
+        queryKey: ['chat-threads'],
+        queryFn: chatApi.getThreads,
+    })
 
     // Query for history (still useful for initial load)
     const { data: historyData, refetch: refetchHistory } = useQuery({
@@ -65,7 +73,7 @@ export function ProjectChat({ projectId }: ProjectChatProps) {
             socket.close()
         }
 
-        const wsUrl = `ws://localhost:8000/api/v1/chat/ws/${threadId}`
+        const wsUrl = `ws://localhost:8000/api/v1/formzed-chat/ws/${threadId}`
         console.log(`Connecting to WebSocket: ${wsUrl}`)
 
         const ws = new WebSocket(wsUrl)
@@ -150,6 +158,22 @@ export function ProjectChat({ projectId }: ProjectChatProps) {
         }
     }
 
+    const startNewChat = () => {
+        const newThreadId = crypto.randomUUID()
+        setThreadId(newThreadId)
+        setMessages([])
+        setSurveyJson(null)
+        refetchThreads()
+    }
+
+    const selectThread = (id: string) => {
+        setThreadId(id)
+        setSurveyJson(null) // Reset survey when switching threads, it will reload if history has it? 
+        // Actually history load doesn't currently bring back final_json, only messages. 
+        // If we want to restore survey, we'd need to fetch it or re-parse from last message if it's there.
+        // For now, just switching chat history.
+    }
+
     // Auto-scroll to bottom
     useEffect(() => {
         if (scrollRef.current) {
@@ -162,10 +186,10 @@ export function ProjectChat({ projectId }: ProjectChatProps) {
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Set Thread ID</DialogTitle>
+                        <DialogTitle>Set Chat Name</DialogTitle>
                         <DialogDescription>
-                            Enter a Thread ID to load an existing conversation or start a new one.
-                            Leave empty to generate a new ID automatically.
+                            Enter a name for the chat to load an existing conversation or start a new one.
+                            Leave empty to generate an ID automatically.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="py-4">
@@ -181,15 +205,64 @@ export function ProjectChat({ projectId }: ProjectChatProps) {
                 </DialogContent>
             </Dialog>
 
-            <div className="flex h-[600px] gap-4">
-                <Card className={cn("flex flex-col", surveyJson ? "w-1/2" : "w-full")}>
+            <div className="flex h-[85vh] gap-4">
+                {/* Sidebar */}
+                <Card className={cn("flex flex-col shrink-0 transition-all duration-300", isSidebarOpen ? "w-64" : "w-16")}>
+                    <CardHeader className={cn("pb-3 flex flex-row items-center", isSidebarOpen ? "justify-between" : "justify-center px-2")}>
+                        {isSidebarOpen && <span className="font-semibold">Chats</span>}
+                        <Button variant="ghost" size="icon" onClick={() => setIsSidebarOpen(!isSidebarOpen)} title={isSidebarOpen ? "Collapse" : "Expand"}>
+                            <PanelLeft size={16} />
+                        </Button>
+                    </CardHeader>
+                    <div className={cn("px-4 pb-2", !isSidebarOpen && "px-2")}>
+                        <Button
+                            onClick={startNewChat}
+                            className={cn("w-full gap-2", isSidebarOpen ? "justify-start" : "justify-center px-0")}
+                            title="New Chat"
+                        >
+                            <Plus size={16} />
+                            {isSidebarOpen && "New Chat"}
+                        </Button>
+                    </div>
+                    <CardContent className="flex-1 p-0 overflow-hidden">
+                        <ScrollArea className="h-full">
+                            <div className="flex flex-col p-2 gap-1">
+                                {threadsData?.threads.map((tid) => (
+                                    <Button
+                                        key={tid}
+                                        variant={threadId === tid ? "secondary" : "ghost"}
+                                        className={cn(
+                                            "h-auto py-3",
+                                            isSidebarOpen ? "justify-start px-4 text-left" : "justify-center px-2"
+                                        )}
+                                        onClick={() => selectThread(tid)}
+                                        title={tid}
+                                    >
+                                        <MessageSquare className={cn("h-4 w-4 shrink-0", isSidebarOpen && "mr-2")} />
+                                        {isSidebarOpen && <span className="truncate text-xs">{tid}</span>}
+                                    </Button>
+                                ))}
+                                {(!threadsData?.threads || threadsData.threads.length === 0) && (
+                                    <div className="text-center text-muted-foreground text-xs py-4">
+                                        {isSidebarOpen ? "No history found" : "..."}
+                                    </div>
+                                )}
+                            </div>
+                        </ScrollArea>
+                    </CardContent>
+                </Card>
+
+                {/* Chat Area */}
+                <Card className={cn("flex flex-col flex-1 min-w-0", surveyJson ? "w-1/3" : "")}>
                     <CardHeader className="pb-3">
                         <div className="flex items-center justify-between">
                             <CardTitle>Chat with Formzed</CardTitle>
                             <div className="flex items-center gap-2">
                                 <div className="text-sm text-muted-foreground flex items-center gap-2">
                                     <span className={cn("w-2 h-2 rounded-full", isConnected ? "bg-green-500" : "bg-red-500")} />
-                                    Thread: {threadId || 'New'}
+                                    <span className="truncate max-w-[150px] text-xs" title={threadId}>
+                                        {threadId || 'New'}
+                                    </span>
                                 </div>
                                 <Button
                                     variant="ghost"
@@ -271,9 +344,18 @@ export function ProjectChat({ projectId }: ProjectChatProps) {
                 </Card>
 
                 {surveyJson && (
-                    <Card className="w-1/2 flex flex-col">
+                    <Card className="w-1/2 flex flex-col shrink-0">
                         <CardHeader className="pb-3">
-                            <CardTitle>Survey Preview</CardTitle>
+                            <div className="flex items-center justify-between">
+                                <CardTitle>Survey Preview</CardTitle>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => setIsSurveyFullScreen(true)}
+                                >
+                                    <Maximize2 className="h-4 w-4" />
+                                </Button>
+                            </div>
                             <div className="text-xs text-muted-foreground">
                                 JSON Loaded: {Object.keys(surveyJson).length} keys
                             </div>
@@ -289,6 +371,22 @@ export function ProjectChat({ projectId }: ProjectChatProps) {
                     </Card>
                 )}
             </div>
+
+            <Dialog open={isSurveyFullScreen} onOpenChange={setIsSurveyFullScreen}>
+                <DialogContent className="sm:max-w-[70vw] w-full h-[90vh] flex flex-col">
+                    <DialogHeader>
+                        <DialogTitle>Survey Full Screen Preview</DialogTitle>
+                    </DialogHeader>
+                    <div className="flex-1 overflow-auto relative">
+                        {surveyJson && (
+                            <StandaloneSurveyRenderer
+                                json={surveyJson}
+                                onComplete={(data) => console.log("Survey Completed:", data)}
+                            />
+                        )}
+                    </div>
+                </DialogContent>
+            </Dialog>
         </>
     )
 }

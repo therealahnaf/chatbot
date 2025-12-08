@@ -13,7 +13,7 @@ export interface ChatResponse {
 
 export const chatApi = {
     sendMessage: async (message: string, threadId?: string): Promise<ChatResponse> => {
-        const response = await apiClient.post<ChatResponse>('/chat', {
+        const response = await apiClient.post<ChatResponse>('/formzed-chat', {
             message,
             thread_id: threadId,
         })
@@ -22,8 +22,13 @@ export const chatApi = {
 
     getHistory: async (threadId: string): Promise<{ thread_id: string; history: ChatMessage[] }> => {
         const response = await apiClient.get<{ thread_id: string; history: ChatMessage[] }>(
-            `/chat/history/${threadId}`
+            `/formzed-chat/history/${threadId}`
         )
+        return response.data
+    },
+
+    getThreads: async (): Promise<{ threads: string[] }> => {
+        const response = await apiClient.get<{ threads: string[] }>('/formzed-chat/threads')
         return response.data
     },
 }

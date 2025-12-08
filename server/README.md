@@ -258,3 +258,9 @@ No conditional logic - each handler processes and passes to the next.
 ## Support
 
 For issues and questions, please open an issue on GitHub.
+
+uv run scripts/create_db.py
+uv run scripts/init_db.py
+uv run alembic upgrade head
+uv run scripts/init_db_langgraph.py
+uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000

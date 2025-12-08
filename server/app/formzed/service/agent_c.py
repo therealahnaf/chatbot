@@ -163,6 +163,8 @@ Wired JSON (Phase 4).
 2.  **Page:** Add `navigationTitle`, `description`.
 3.  **Question:** Add `description`, `placeHolder`.
 
+Always use link: https://placehold.co/200x80/333/fff?text=Company+Logo for logo.
+
 **Output:**
 Return the FINAL valid SurveyJS JSON string.
 """
@@ -202,11 +204,7 @@ def extract_json(text):
     match = re.search(r"```\s*(\{.*?\})\s*```", text, re.DOTALL)
     if match:
         return match.group(1)
-    
-    # Try to find just the first { to the last }
-    # We use a non-greedy match for the content but greedy for the outer braces?
-    # Actually, {.*} with DOTALL is greedy and matches from first { to last }.
-    # This is usually correct for a single root object.
+
     match = re.search(r"(\{.*\})", text, re.DOTALL)
     if match:
         return match.group(1)
@@ -377,16 +375,7 @@ def run_phase_5(state: AgentCState):
 def run_fix_agent(state: AgentCState):
     print("--- Agent C: Fixing Agent ---")
     messages = state["messages"]
-    
-    # Add the system prompt for the fixing agent
-    # We prepend it or append it? 
-    # The messages list contains the HumanMessage with the error.
-    # We should probably construct a new list for the model call to ensure the SystemMessage is first or relevant.
-    
-    # If we just append, the history might be weird if it's empty.
-    # Let's create a new list starting with SystemMessage, then the HumanMessage from state.
-    
-    # Check if there are existing messages
+
     existing_messages = state.get("messages", [])
     
     # Construct prompt messages

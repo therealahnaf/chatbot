@@ -1,7 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
 import { useParams } from '@tanstack/react-router'
-import { DashboardLayout } from '@/components/layout/dashboard-layout'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Header } from '@/components/layout/header'
+import { Search } from '@/components/search'
+import { ThemeSwitch } from '@/components/theme-switch'
+import { ConfigDrawer } from '@/components/config-drawer'
+import { ProfileDropdown } from '@/components/profile-dropdown'
 import { projectsApi } from '@/lib/api/projects.api'
 import { ProjectChat } from './components/project-chat'
 
@@ -16,61 +19,29 @@ export function ProjectDetailsPage() {
     })
 
     if (isLoading) {
-        return (
-            <DashboardLayout title='Loading...'>
-                <div className='p-4'>Loading project...</div>
-            </DashboardLayout>
-        )
+        return <div className='p-4'>Loading project...</div>
     }
 
     if (!project) {
-        return (
-            <DashboardLayout title='Error'>
-                <div className='p-4'>Project not found</div>
-            </DashboardLayout>
-        )
+        return <div className='p-4'>Project not found</div>
     }
 
-    const isFormzed = project.title === 'Formzed'
-
     return (
-        <DashboardLayout
-            title={project.title}
-            description={`Project ID: ${project.id}`}
-        >
-            <div className='p-4'>
-                <Tabs defaultValue="overview" className="space-y-4">
-                    <TabsList>
-                        <TabsTrigger value="overview">Overview</TabsTrigger>
-                        {isFormzed && <TabsTrigger value="chat">Chat</TabsTrigger>}
-                        <TabsTrigger value="settings">Settings</TabsTrigger>
-                    </TabsList>
+        <>
+            <Header fixed>
+                <Search />
+                <div className='ms-auto flex items-center space-x-4'>
+                    <ThemeSwitch />
+                    <ConfigDrawer />
+                    <ProfileDropdown />
+                </div>
+            </Header>
 
-                    <TabsContent value="overview" className="space-y-4">
-                        <div className="p-4 border rounded-lg">
-                            <h3 className="text-lg font-medium">Project Overview</h3>
-                            <p className="text-muted-foreground mt-2">
-                                Details for project {project.title}
-                            </p>
-                        </div>
-                    </TabsContent>
-
-                    {isFormzed && (
-                        <TabsContent value="chat" className="space-y-4">
-                            <ProjectChat projectId={project.id} />
-                        </TabsContent>
-                    )}
-
-                    <TabsContent value="settings" className="space-y-4">
-                        <div className="p-4 border rounded-lg">
-                            <h3 className="text-lg font-medium">Project Settings</h3>
-                            <p className="text-muted-foreground mt-2">
-                                Settings configuration would go here.
-                            </p>
-                        </div>
-                    </TabsContent>
-                </Tabs>
-            </div>
-        </DashboardLayout>
+            <main className='flex-1 p-4 h-screen flex flex-col'>
+                <div className="flex-1">
+                    <ProjectChat projectId={project.id} />
+                </div>
+            </main>
+        </>
     )
 }
