@@ -9,11 +9,6 @@ import {
     List,
     ToggleLeft,
     Star,
-    Code,
-    Image as ImageIcon,
-    Grid,
-    Table,
-    Layout,
     FileUp
 } from 'lucide-react';
 

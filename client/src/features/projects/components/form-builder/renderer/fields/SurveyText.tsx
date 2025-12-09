@@ -4,9 +4,12 @@ import { Label } from '@/components/ui/label';
 
 interface SurveyTextProps {
     element: any;
+    value?: string;
+    onChange?: (value: string) => void;
+    error?: string;
 }
 
-export const SurveyText: React.FC<SurveyTextProps> = ({ element }) => {
+export const SurveyText: React.FC<SurveyTextProps> = ({ element, value, onChange, error }) => {
     return (
         <div className="space-y-2">
             <Label>
@@ -21,7 +24,11 @@ export const SurveyText: React.FC<SurveyTextProps> = ({ element }) => {
                 disabled={element.readOnly}
                 type={element.inputType || 'text'}
                 maxLength={element.maxLength}
+                value={value || ''}
+                onChange={(e) => onChange?.(e.target.value)}
+                className={error ? "border-destructive" : ""}
             />
+            {error && <p className="text-sm text-destructive">{error}</p>}
         </div>
     );
 };

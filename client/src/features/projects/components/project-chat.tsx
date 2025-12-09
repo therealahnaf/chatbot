@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Send, User, Bot, Plus, PanelLeft, Settings } from 'lucide-react'
+import { Send, User, Bot, Plus, Settings, ChevronLeft, ChevronRight, Edit, Trash, SquarePen } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent} from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -47,6 +47,8 @@ export function ProjectChat({ projectId }: ProjectChatProps) {
     const [isSidebarOpen, setIsSidebarOpen] = useState(true)
     const [activeDragItem, setActiveDragItem] = useState<any>(null)
     const [selectedElementId, setSelectedElementId] = useState<string | null>(null)
+    const [builderPage, setBuilderPage] = useState(0)
+    const [activeTab, setActiveTab] = useState("builder")
     const scrollRef = useRef<HTMLDivElement>(null)
 
     // Query for threads (can be removed if not used elsewhere, but maybe keep for future)
@@ -61,8 +63,6 @@ export function ProjectChat({ projectId }: ProjectChatProps) {
         queryFn: () => chatApi.getHistory(threadId),
         enabled: false,
     })
-
-    const [isInputFocused, setIsInputFocused] = useState(false);
 
     // Update messages when history is loaded
     useEffect(() => {
@@ -544,6 +544,22 @@ export function ProjectChat({ projectId }: ProjectChatProps) {
         });
     };
 
+    const handleEditPage = () => {
+        if (!surveyJson) return;
+        const totalPages = surveyJson.pages?.length || 0;
+        const hasPages = totalPages > 0;
+
+        if (hasPages && surveyJson.pages[builderPage]) {
+            handleElementSelect({ ...surveyJson.pages[builderPage], type: 'page' });
+        } else if (!hasPages && builderPage === 0) {
+            handleElementSelect({
+                name: 'page1',
+                type: 'page',
+                elements: surveyJson.elements || surveyJson.questions
+            });
+        }
+    };
+
     // Custom collision detection strategy
     const customCollisionDetection: CollisionDetection = (args) => {
         // First, check for pointer collisions (most intuitive)
@@ -589,153 +605,238 @@ export function ProjectChat({ projectId }: ProjectChatProps) {
                 </DialogContent>
             </Dialog>
 
-            <div className="flex h-[85vh] gap-4">
+            <div className="flex h-[85vh]">
                 {/* Sidebar */}
-                {/* Sidebar */}
-                <Card className="flex flex-col shrink-0 w-64 bg-muted">
-                    <CardContent className="flex-1 p-0 overflow-hidden">
-                        <ScrollArea className="h-full">
-                            <Toolbox />
-                        </ScrollArea>
-                    </CardContent>
-                </Card>
-
-
-
-                {/* Main Content Area: Vertical Split */}
-                <div className="flex flex-col flex-1 min-w-0 h-full relative gap-4">
-                    {/* Top: Canvas (Always visible) */}
-                    <Card className="flex flex-col flex-1 shrink-0 overflow-hidden">
-                        <CardContent className="flex-1 p-0 overflow-hidden relative bg-slate-50/50 dark:bg-slate-900/50">
-                            <div className="absolute inset-0 overflow-auto">
-                                <CustomSurveyRenderer
-                                    json={surveyJson || { elements: [] }}
-                                    onJsonChange={setSurveyJson}
-                                    onSelectElement={handleElementSelect}
-                                    selectedElementId={selectedElementId || undefined}
-                                    onAddPage={handleAddPage}
-                                    onDeletePage={handleDeletePage}
-                                />
-                            </div>
+                <div
+                    className={cn(
+                        "shrink-0 transition-all duration-500 ease-in-out overflow-hidden",
+                        activeTab === 'builder' ? "w-64 mr-4 opacity-100" : "w-0 mr-0 opacity-0"
+                    )}
+                >
+                    <Card className="flex flex-col w-64 h-full bg-muted">
+                        <CardContent className="flex-1 p-0 overflow-hidden">
+                            <ScrollArea className="h-full">
+                                <Toolbox />
+                            </ScrollArea>
                         </CardContent>
                     </Card>
                 </div>
-
-
-
-                {/* Right Sidebar: Chat & Property Editor */}
-                <Card className="w-80 flex flex-col shrink-0 border-l bg-background overflow-hidden">
-                    <Tabs defaultValue="chat" className="flex flex-col h-full">
-                        <div className="px-4 pt-4">
-                            <TabsList className="w-full grid grid-cols-2">
-                                <TabsTrigger value="chat" className="flex items-center gap-2">
-                                    <Bot className="w-4 h-4" />
-                                    AI
-                                </TabsTrigger>
-                                <TabsTrigger value="properties" className="flex items-center gap-2">
-                                    <Settings className="w-4 h-4" />
-                                    Properties
-                                </TabsTrigger>
+                {/* Center: Canvas */}
+                <div className="flex-1 flex flex-col h-full overflow-hidden">
+                    <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col h-full">
+                        <div className="px-4 pt-2">
+                            <TabsList className="grid w-[200px] grid-cols-2">
+                                <TabsTrigger value="builder">Builder</TabsTrigger>
+                                <TabsTrigger value="preview">Preview</TabsTrigger>
                             </TabsList>
                         </div>
 
-                        <TabsContent value="chat" className="flex-1 flex flex-col min-h-0 data-[state=active]:flex mt-2">
-                            <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/20">
-                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                    <span className={cn("w-2 h-2 rounded-full", isConnected ? "bg-green-500" : "bg-red-500")} />
-                                    <span className="truncate max-w-[150px]" title={threadId}>
-                                        {isConnected ? 'Connected' : 'Disconnected'}
-                                    </span>
-                                </div>
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-6 w-6"
-                                    onClick={() => {
-                                        setTempThreadId(threadId)
-                                        setIsDialogOpen(true)
-                                    }}
-                                    title="Chat Settings"
-                                >
-                                    <Settings className="h-4 w-4" />
-                                </Button>
-                            </div>
-
-                            <div className="flex-1 overflow-hidden relative">
-                                <ScrollArea className="h-full p-4" ref={scrollRef}>
-                                    <div className="space-y-4">
-                                        {messages.length === 0 && (
-                                            <div className="text-center text-muted-foreground py-8 text-sm">
-                                                Hi! I can help you build your form. Just type what you need.
-                                            </div>
-                                        )}
-                                        {messages
-                                            .filter(msg => msg.type === 'human' || msg.type === 'ai')
-                                            .map((msg, index) => (
-                                                <div
-                                                    key={index}
-                                                    className={cn(
-                                                        "flex items-start gap-2 max-w-[90%]",
-                                                        msg.type === 'human' ? "ml-auto flex-row-reverse" : "mr-auto"
-                                                    )}
-                                                >
-                                                    <div className={cn(
-                                                        "w-6 h-6 rounded-full flex items-center justify-center shrink-0",
-                                                        msg.type === 'human' ? "bg-primary text-primary-foreground" : "bg-muted"
-                                                    )}>
-                                                        {msg.type === 'human' ? <User size={12} /> : <Bot size={12} />}
-                                                    </div>
-                                                    <div className={cn(
-                                                        "rounded-lg p-2 px-3 text-sm whitespace-pre-wrap",
-                                                        msg.type === 'human'
-                                                            ? "bg-primary text-primary-foreground"
-                                                            : "bg-muted"
-                                                    )}>
-                                                        {msg.type === 'ai' ? (
-                                                            <Streamdown shikiTheme={themes}>
-                                                                {msg.content}
-                                                            </Streamdown>
-                                                        ) : (
-                                                            msg.content
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            ))}
-                                    </div>
-                                </ScrollArea>
-                            </div>
-
-                            <div className="p-3 border-t bg-background">
-                                <div className="flex w-full gap-2">
-                                    <Input
-                                        placeholder="Type your message..."
-                                        value={input}
-                                        onChange={(e) => setInput(e.target.value)}
-                                        onKeyDown={handleKeyDown}
-                                        disabled={!isConnected}
-                                        className="h-9"
-                                    />
+                        <TabsContent value="builder" className="flex-1 p-4 h-full overflow-hidden data-[state=inactive]:hidden flex flex-col">
+                            <div className="flex justify-between items-center mb-2 px-1">
+                                <div className="flex items-center gap-1">
                                     <Button
-                                        onClick={handleSend}
-                                        disabled={!isConnected || !input.trim()}
-                                        size="icon"
-                                        className="h-9 w-9 shrink-0"
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-8 w-8 p-0"
+                                        onClick={() => setBuilderPage(Math.max(0, builderPage - 1))}
+                                        disabled={builderPage === 0}
                                     >
-                                        <Send size={16} />
+                                        <ChevronLeft className="h-4 w-4" />
+                                    </Button>
+                                    <span className="text-sm font-medium mx-2">
+                                        Page {builderPage + 1} of {Math.max(1, surveyJson?.pages?.length || 0)}
+                                    </span>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-8 w-8 p-0"
+                                        onClick={() => setBuilderPage(Math.min((surveyJson?.pages?.length || 1) - 1, builderPage + 1))}
+                                        disabled={builderPage >= (surveyJson?.pages?.length || 1) - 1}
+                                    >
+                                        <ChevronRight className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                                <div className="flex gap-1">
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-8 w-8 p-0"
+                                        onClick={handleEditPage}
+                                        title="Edit Page Properties"
+                                    >
+                                        <Edit className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                                        onClick={() => handleDeletePage(builderPage)}
+                                        disabled={(surveyJson?.pages?.length || 0) <= 1}
+                                        title="Delete Page"
+                                    >
+                                        <Trash className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-8 w-8 p-0 text-primary hover:text-primary"
+                                        onClick={handleAddPage}
+                                        title="Add New Page"
+                                    >
+                                        <Plus className="h-4 w-4" />
                                     </Button>
                                 </div>
                             </div>
+                            <Card className="flex-1 flex flex-col overflow-hidden shadow-sm">
+                                <div className="flex-1 overflow-y-auto">
+                                    <CustomSurveyRenderer
+                                        json={surveyJson || { elements: [] }}
+                                        onJsonChange={setSurveyJson}
+                                        onSelectElement={handleElementSelect}
+                                        selectedElementId={selectedElementId || undefined}
+                                        onAddPage={handleAddPage}
+                                        onDeletePage={handleDeletePage}
+                                        currentPage={builderPage}
+                                        onPageChange={setBuilderPage}
+                                        hideNavigation={true}
+                                    />
+                                </div>
+                            </Card>
                         </TabsContent>
 
-                        <TabsContent value="properties" className="flex-1 min-h-0 overflow-auto mt-0">
-                            <PropertyEditor
-                                element={getSelectedElement()}
-                                onUpdate={handleElementUpdate}
-                                onDelete={handleElementDelete}
-                            />
+                        <TabsContent value="preview" className="flex-1 p-4 h-full overflow-hidden data-[state=inactive]:hidden">
+                            <Card className="h-full flex flex-col overflow-hidden shadow-sm">
+                                <div className="flex-1 overflow-y-auto">
+                                    <CustomSurveyRenderer
+                                        json={surveyJson || { elements: [] }}
+                                        previewMode={true}
+                                    />
+                                </div>
+                            </Card>
                         </TabsContent>
                     </Tabs>
-                </Card>
+                </div>
+
+                {/* Right Sidebar: Chat & Property Editor */}
+                <div
+                    className={cn(
+                        "shrink-0 transition-all duration-500 ease-in-out overflow-hidden",
+                        activeTab === 'builder' ? "w-80 ml-4 opacity-100" : "w-0 ml-0 opacity-0"
+                    )}
+                >
+                    <Card className="w-80 flex flex-col h-full border-l bg-background overflow-hidden">
+                        <Tabs defaultValue="chat" className="flex flex-col h-full">
+                            <div className="px-4 pt-4">
+                                <TabsList className="w-full grid grid-cols-2">
+                                    <TabsTrigger value="chat" className="flex items-center gap-2">
+                                        <Bot className="w-4 h-4" />
+                                        AI
+                                    </TabsTrigger>
+                                    <TabsTrigger value="properties" className="flex items-center gap-2">
+                                        <Settings className="w-4 h-4" />
+                                        Properties
+                                    </TabsTrigger>
+                                </TabsList>
+                            </div>
+
+                            <TabsContent value="chat" className="flex-1 flex flex-col min-h-0 data-[state=active]:flex mt-2">
+                                <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/20">
+                                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                        <span className={cn("w-2 h-2 rounded-full", isConnected ? "bg-green-500" : "bg-red-500")} />
+                                        <span className="truncate max-w-[150px]" title={threadId}>
+                                            {isConnected ? 'Connected' : 'Disconnected'}
+                                        </span>
+                                    </div>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-6 w-6"
+                                        onClick={() => {
+                                            setTempThreadId(threadId)
+                                            setIsDialogOpen(true)
+                                        }}
+                                        title="Chat Settings"
+                                    >
+                                        <SquarePen className="h-4 w-4" />
+                                    </Button>
+                                </div>
+
+                                <div className="flex-1 overflow-hidden relative">
+                                    <ScrollArea className="h-full p-4" ref={scrollRef}>
+                                        <div className="space-y-4">
+                                            {messages.length === 0 && (
+                                                <div className="text-center text-muted-foreground py-8 text-sm">
+                                                    Hi! I can help you build your form. Just type what you need.
+                                                </div>
+                                            )}
+                                            {messages
+                                                .filter(msg => msg.type === 'human' || msg.type === 'ai')
+                                                .map((msg, index) => (
+                                                    <div
+                                                        key={index}
+                                                        className={cn(
+                                                            "flex items-start gap-2 max-w-[90%]",
+                                                            msg.type === 'human' ? "ml-auto flex-row-reverse" : "mr-auto"
+                                                        )}
+                                                    >
+                                                        <div className={cn(
+                                                            "w-6 h-6 rounded-full flex items-center justify-center shrink-0",
+                                                            msg.type === 'human' ? "bg-primary text-primary-foreground" : "bg-muted"
+                                                        )}>
+                                                            {msg.type === 'human' ? <User size={12} /> : <Bot size={12} />}
+                                                        </div>
+                                                        <div className={cn(
+                                                            "rounded-lg p-2 px-3 text-sm whitespace-pre-wrap",
+                                                            msg.type === 'human'
+                                                                ? "bg-primary text-primary-foreground"
+                                                                : "bg-muted"
+                                                        )}>
+                                                            {msg.type === 'ai' ? (
+                                                                <Streamdown shikiTheme={themes}>
+                                                                    {msg.content}
+                                                                </Streamdown>
+                                                            ) : (
+                                                                msg.content
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                        </div>
+                                    </ScrollArea>
+                                </div>
+
+                                <div className="p-3 border-t bg-background">
+                                    <div className="flex w-full gap-2">
+                                        <Input
+                                            placeholder="Type your message..."
+                                            value={input}
+                                            onChange={(e) => setInput(e.target.value)}
+                                            onKeyDown={handleKeyDown}
+                                            disabled={!isConnected}
+                                            className="h-9"
+                                        />
+                                        <Button
+                                            onClick={handleSend}
+                                            disabled={!isConnected || !input.trim()}
+                                            size="icon"
+                                            className="h-9 w-9 shrink-0"
+                                        >
+                                            <Send size={16} />
+                                        </Button>
+                                    </div>
+                                </div>
+                            </TabsContent>
+
+                            <TabsContent value="properties" className="flex-1 min-h-0 overflow-auto mt-0">
+                                <PropertyEditor
+                                    element={getSelectedElement()}
+                                    onUpdate={handleElementUpdate}
+                                    onDelete={handleElementDelete}
+                                />
+                            </TabsContent>
+                        </Tabs>
+                    </Card>
+                </div>
             </div>
 
             <Dialog open={isSurveyFullScreen} onOpenChange={setIsSurveyFullScreen}>

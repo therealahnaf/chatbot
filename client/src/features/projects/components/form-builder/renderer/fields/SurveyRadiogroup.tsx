@@ -4,27 +4,34 @@ import { Label } from '@/components/ui/label';
 
 interface SurveyRadiogroupProps {
     element: any;
+    value?: string;
+    onChange?: (value: string) => void;
+    error?: string;
 }
 
-export const SurveyRadiogroup: React.FC<SurveyRadiogroupProps> = ({ element }) => {
+export const SurveyRadiogroup: React.FC<SurveyRadiogroupProps> = ({ element, value, onChange, error }) => {
     return (
         <div className="space-y-3">
-            <Label>
+            <Label className={error ? "text-destructive" : ""}>
                 {element.title || element.name}
                 {element.isRequired && <span className="text-destructive ml-1">*</span>}
             </Label>
             {element.description && (
                 <p className="text-sm text-muted-foreground">{element.description}</p>
             )}
-            <RadioGroup disabled={element.readOnly}>
+            <RadioGroup
+                disabled={element.readOnly}
+                value={value}
+                onValueChange={onChange}
+            >
                 {(element.choices || []).map((choice: any, index: number) => {
-                    const value = typeof choice === 'object' ? choice.value : choice;
+                    const itemValue = typeof choice === 'object' ? choice.value : choice;
                     const text = typeof choice === 'object' ? choice.text : choice;
                     const id = `${element.name}-${index}`;
 
                     return (
-                        <div key={value} className="flex items-center space-x-2">
-                            <RadioGroupItem value={String(value)} id={id} />
+                        <div key={itemValue} className="flex items-center space-x-2">
+                            <RadioGroupItem value={String(itemValue)} id={id} />
                             <Label htmlFor={id} className="font-normal cursor-pointer">
                                 {text}
                             </Label>
@@ -53,6 +60,7 @@ export const SurveyRadiogroup: React.FC<SurveyRadiogroupProps> = ({ element }) =
                     </div>
                 )}
             </RadioGroup>
+            {error && <p className="text-sm text-destructive">{error}</p>}
         </div>
     );
 };

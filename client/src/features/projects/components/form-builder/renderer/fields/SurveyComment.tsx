@@ -4,9 +4,12 @@ import { Label } from '@/components/ui/label';
 
 interface SurveyCommentProps {
     element: any;
+    value?: string;
+    onChange?: (value: string) => void;
+    error?: string;
 }
 
-export const SurveyComment: React.FC<SurveyCommentProps> = ({ element }) => {
+export const SurveyComment: React.FC<SurveyCommentProps> = ({ element, value, onChange, error }) => {
     return (
         <div className="space-y-2">
             <Label>
@@ -21,7 +24,11 @@ export const SurveyComment: React.FC<SurveyCommentProps> = ({ element }) => {
                 disabled={element.readOnly}
                 rows={element.rows || 4}
                 maxLength={element.maxLength}
+                value={value || ''}
+                onChange={(e) => onChange?.(e.target.value)}
+                className={error ? "border-destructive" : ""}
             />
+            {error && <p className="text-sm text-destructive">{error}</p>}
         </div>
     );
 };

@@ -9,6 +9,7 @@ interface FormElementWrapperProps {
     isSelected?: boolean;
     onSelect?: (element: any) => void;
     children: React.ReactNode;
+    readOnly?: boolean;
 }
 
 export const FormElementWrapper: React.FC<FormElementWrapperProps> = ({
@@ -16,6 +17,7 @@ export const FormElementWrapper: React.FC<FormElementWrapperProps> = ({
     isSelected,
     onSelect,
     children,
+    readOnly = false,
 }) => {
     const {
         attributes,
@@ -24,12 +26,23 @@ export const FormElementWrapper: React.FC<FormElementWrapperProps> = ({
         transform,
         transition,
         isDragging,
-    } = useSortable({ id: element.name });
+    } = useSortable({
+        id: element.name,
+        disabled: readOnly,
+    });
 
     const style = {
         transform: CSS.Transform.toString(transform),
         transition,
     };
+
+    if (readOnly) {
+        return (
+            <div className="mb-4 p-4 border border-transparent">
+                {children}
+            </div>
+        );
+    }
 
     return (
         <div

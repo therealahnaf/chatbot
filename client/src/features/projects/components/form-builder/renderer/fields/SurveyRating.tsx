@@ -4,9 +4,12 @@ import { cn } from '@/lib/utils';
 
 interface SurveyRatingProps {
     element: any;
+    value?: number;
+    onChange?: (value: number) => void;
+    error?: string;
 }
 
-export const SurveyRating: React.FC<SurveyRatingProps> = ({ element }) => {
+export const SurveyRating: React.FC<SurveyRatingProps> = ({ element, value, onChange, error }) => {
     const min = element.rateMin || 1;
     const max = element.rateMax || 5;
     const step = element.rateStep || 1;
@@ -18,7 +21,7 @@ export const SurveyRating: React.FC<SurveyRatingProps> = ({ element }) => {
 
     return (
         <div className="space-y-3">
-            <Label>
+            <Label className={error ? "text-destructive" : ""}>
                 {element.title || element.name}
                 {element.isRequired && <span className="text-destructive ml-1">*</span>}
             </Label>
@@ -35,9 +38,10 @@ export const SurveyRating: React.FC<SurveyRatingProps> = ({ element }) => {
                             key={rate}
                             type="button"
                             disabled={element.readOnly}
+                            onClick={() => onChange?.(rate)}
                             className={cn(
                                 "flex h-10 w-10 items-center justify-center rounded-full border text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50",
-                                // Add active state logic here when we have value prop
+                                value === rate ? "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground" : ""
                             )}
                         >
                             {rate}
@@ -48,6 +52,7 @@ export const SurveyRating: React.FC<SurveyRatingProps> = ({ element }) => {
                     <span className="text-sm text-muted-foreground">{element.maxRateDescription}</span>
                 )}
             </div>
+            {error && <p className="text-sm text-destructive">{error}</p>}
         </div>
     );
 };
