@@ -45,7 +45,13 @@ def chat(
     try:
         # Invoke the graph
         # The graph state is MessagesState, so passing {"messages": [msg]} appends.
-        final_state = graph.invoke({"messages": [input_message]}, config=config)
+        input_data = {"messages": [input_message]}
+        if request.current_json:
+            import json
+            # Ensure it's a string for the state
+            input_data["final_json"] = json.dumps(request.current_json)
+            
+        final_state = graph.invoke(input_data, config=config)
         
         # Extract response
         messages = final_state["messages"]
@@ -159,12 +165,30 @@ async def websocket_endpoint(websocket: WebSocket, thread_id: str):
                 graph = get_graph(checkpointer)
                 config = {"configurable": {"thread_id": thread_id}}
                 
-                input_message = HumanMessage(content=data)
+                # Parse incoming data
+                message_content = data
+                current_json = None
+                
+                try:
+                    import json
+                    parsed_data = json.loads(data)
+                    if isinstance(parsed_data, dict) and "message" in parsed_data:
+                        message_content = parsed_data["message"]
+                        current_json = parsed_data.get("current_json")
+                except json.JSONDecodeError:
+                    # Not JSON, treat as raw string message
+                    pass
+                
+                input_message = HumanMessage(content=message_content)
                 
                 # Run graph synchronously
+                input_data = {"messages": [input_message]}
+                if current_json:
+                    input_data["final_json"] = json.dumps(current_json) if isinstance(current_json, dict) else current_json
+                
                 # Note: In a production app with high concurrency, this should be run in a threadpool
                 # to avoid blocking the asyncio event loop.
-                final_state = graph.invoke({"messages": [input_message]}, config=config)
+                final_state = graph.invoke(input_data, config=config)
                 
                 messages = final_state["messages"]
                 last_message = messages[-1]
