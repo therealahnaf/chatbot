@@ -106,10 +106,36 @@ export const CustomSurveyRenderer: React.FC<CustomSurveyRendererProps> = ({
         let isValid = true;
 
         elements.forEach(element => {
+            const value = formValues[element.name];
+
+            // Required check
             if (element.isRequired) {
-                const value = formValues[element.name];
                 if (value === undefined || value === null || value === '' || (Array.isArray(value) && value.length === 0)) {
                     newErrors[element.name] = 'This field is required';
+                    isValid = false;
+                }
+            }
+
+            // Length checks (only if value exists)
+            if (value && typeof value === 'string') {
+                if (element.minLength && value.length < element.minLength) {
+                    newErrors[element.name] = `Please enter at least ${element.minLength} characters.`;
+                    isValid = false;
+                }
+                if (element.maxLength && value.length > element.maxLength) {
+                    newErrors[element.name] = `Please enter no more than ${element.maxLength} characters.`;
+                    isValid = false;
+                }
+            }
+
+            // Checkbox selection limits
+            if (element.type === 'checkbox' && Array.isArray(value)) {
+                if (element.minSelectedChoices && value.length < element.minSelectedChoices) {
+                    newErrors[element.name] = `Please select at least ${element.minSelectedChoices} item(s).`;
+                    isValid = false;
+                }
+                if (element.maxSelectedChoices && value.length > element.maxSelectedChoices) {
+                    newErrors[element.name] = `Please select no more than ${element.maxSelectedChoices} item(s).`;
                     isValid = false;
                 }
             }
@@ -182,7 +208,13 @@ export const CustomSurveyRenderer: React.FC<CustomSurveyRendererProps> = ({
             >
                 {previewMode ? (
                     // Render directly without SortableContext in preview mode
-                    <div className="space-y-4">
+                    <div
+                        className="space-y-6 origin-top-left"
+                        style={{
+                            transform: 'scale(1.2)',
+                            width: 'calc(100% / 1.2)'
+                        }}
+                    >
                         {elements.map((element) => {
                             const Component = getComponentForType(element.type);
                             if (!Component) return null;
@@ -240,8 +272,11 @@ export const CustomSurveyRenderer: React.FC<CustomSurveyRendererProps> = ({
                 )}
 
                 {elements.length === 0 && (
-                    <div className="text-center text-muted-foreground py-10 border-2 border-dashed rounded-lg">
-                        Page is empty
+                    <div className={cn(
+                        "text-center text-muted-foreground py-10 rounded-lg",
+                        !previewMode && "border-2 border-dashed"
+                    )}>
+                        {previewMode ? "Nothing to preview" : "Page is empty"}
                     </div>
                 )}
             </div>

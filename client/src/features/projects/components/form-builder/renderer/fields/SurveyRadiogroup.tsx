@@ -10,6 +10,21 @@ interface SurveyRadiogroupProps {
 }
 
 export const SurveyRadiogroup: React.FC<SurveyRadiogroupProps> = ({ element, value, onChange, error }) => {
+    const handleValueChange = (val: string) => {
+        if (onChange) {
+            onChange(val);
+        }
+    };
+
+    const handleClear = () => {
+        if (onChange) {
+            onChange('');
+        }
+    };
+
+    // Ensure value is a string for comparison
+    const currentValue = value ? String(value) : '';
+
     return (
         <div className="space-y-3">
             <Label className={error ? "text-destructive" : ""}>
@@ -21,8 +36,8 @@ export const SurveyRadiogroup: React.FC<SurveyRadiogroupProps> = ({ element, val
             )}
             <RadioGroup
                 disabled={element.readOnly}
-                value={value}
-                onValueChange={onChange}
+                value={currentValue}
+                onValueChange={handleValueChange}
             >
                 {(element.choices || []).map((choice: any, index: number) => {
                     const itemValue = typeof choice === 'object' ? choice.value : choice;
@@ -38,6 +53,16 @@ export const SurveyRadiogroup: React.FC<SurveyRadiogroupProps> = ({ element, val
                         </div>
                     );
                 })}
+
+                {element.showNoneItem && (
+                    <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="none" id={`${element.name}-none`} />
+                        <Label htmlFor={`${element.name}-none`} className="font-normal cursor-pointer">
+                            {element.noneText || "None"}
+                        </Label>
+                    </div>
+                )}
+
                 {element.showOtherItem && (
                     <div className="space-y-2">
                         <div className="flex items-center space-x-2">
@@ -46,20 +71,32 @@ export const SurveyRadiogroup: React.FC<SurveyRadiogroupProps> = ({ element, val
                                 {element.otherText || "Other"}
                             </Label>
                         </div>
-                        {/* Ideally we would conditionally show this input when 'other' is selected, 
-                            but for this renderer we'll just show it indented for now or we need state. 
-                            Since this is a stateless renderer, we'll just render it. */}
-                        <div className="pl-6">
-                            <input
-                                type="text"
-                                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                                placeholder={element.otherPlaceholder || "Please specify..."}
-                                disabled={element.readOnly}
-                            />
-                        </div>
+                        {currentValue === 'other' && (
+                            <div className="pl-6">
+                                <input
+                                    type="text"
+                                    className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                                    placeholder={element.otherPlaceholder || "Please specify..."}
+                                    disabled={element.readOnly}
+                                // In a real app, we'd probably want to store this 'other' text separately or combined with the value
+                                // For this renderer, we'll just show the input.
+                                />
+                            </div>
+                        )}
                     </div>
                 )}
             </RadioGroup>
+
+            {element.showClearButton && currentValue !== '' && !element.readOnly && (
+                <button
+                    type="button"
+                    onClick={handleClear}
+                    className="text-xs text-muted-foreground hover:text-foreground underline"
+                >
+                    Clear selection
+                </button>
+            )}
+
             {error && <p className="text-sm text-destructive">{error}</p>}
         </div>
     );

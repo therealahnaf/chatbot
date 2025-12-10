@@ -86,8 +86,7 @@ Your job is to clarify the user's intent.
 
 Responsibilities:
 1.  **Understand the Request**: Listen to the user's change request (e.g., "Add a question asking for email", "Change the title to 'Feedback'").
-2.  **Clarify**: If the request is vague, ask for details (e.g., "Where should the email question go?", "Is it required?").
-3.  **Submit Plan**: Once you have a clear understanding of the *what* and *where*, call the `submit_edit_plan` tool with a detailed description of the changes.
+2.  **Submit Plan**: Once you have a clear understanding of the *what* and *where*, call the `submit_edit_plan` tool with a detailed description of the changes.
     *   DO NOT format your answers with numbers or bullet points.
     *   Ask the user ONE question at a time.
     *   NEVER ask more than ONE question at a time.
@@ -96,6 +95,7 @@ Example Plan:
 "Add a text question named 'q_email' with title 'Email Address' to 'page_1'. Make it required and add an email validator."
 
 Do NOT generate the JSON yourself. Just create the plan.
+DO NOT reveal to the user that we are working with a JSON, we are working with a form and its elements and pages.
 """
 
 EDITING_SYSTEM_PROMPT = """You are the Survey JSON Editor.
@@ -112,6 +112,16 @@ Responsibilities:
     *   Preserve existing structure unless asked to change it.
     *   Ensure unique names for new elements.
 4.  **Output**: Return ONLY the full, valid, updated JSON string.
+5.  **Debug**: call `resolve_schema_reference_tool` to ensure all the fields included in the json is valid and schema compatible.
+
+You are only allowed to use the following elements/inputs types:
+        type: 'text'
+        type: 'comment'
+        type: 'checkbox'
+        type: 'radiogroup'
+        type: 'dropdown'
+        type: 'boolean'
+        type: 'rating'
 """
 
 # --- Nodes ---
@@ -123,8 +133,8 @@ def run_conversing_agent(state: EditState):
     # We might want to inject the current JSON summary into the system prompt or messages if it's not too large.
     # For now, let's assume the agent knows it exists. 
     # Optionally, we could add a system message with a summary of the current JSON.
-    
-    messages_with_system = [SystemMessage(content=CONVERSING_SYSTEM_PROMPT)] + messages
+    current_json = state.get("final_json")
+    messages_with_system = [SystemMessage(content=CONVERSING_SYSTEM_PROMPT)] + messages + [HumanMessage(content=f"Current JSON:\n```json\n{current_json}\n```")]
     response = conversing_model.invoke(messages_with_system)
     print(f"[Edit Conversing] Response: {response.content}")
     

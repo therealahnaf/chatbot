@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Send, User, Bot, Plus, Settings, ChevronLeft, ChevronRight, Edit, Trash, SquarePen } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent} from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -631,7 +631,7 @@ export function ProjectChat({ projectId }: ProjectChatProps) {
                             </TabsList>
                         </div>
 
-                        <TabsContent value="builder" className="flex-1 p-4 h-full overflow-hidden data-[state=inactive]:hidden flex flex-col">
+                        <TabsContent value="builder" className="flex-1 p-4 h-full overflow-hidden data-[state=inactive]:hidden flex flex-col max-w-5xl mx-auto w-full">
                             <div className="flex justify-between items-center mb-2 px-1">
                                 <div className="flex items-center gap-1">
                                     <Button
@@ -704,7 +704,7 @@ export function ProjectChat({ projectId }: ProjectChatProps) {
                             </Card>
                         </TabsContent>
 
-                        <TabsContent value="preview" className="flex-1 p-4 h-full overflow-hidden data-[state=inactive]:hidden">
+                        <TabsContent value="preview" className="flex-1 p-4 h-full overflow-hidden data-[state=inactive]:hidden max-w-5xl mx-auto w-full">
                             <Card className="h-full flex flex-col overflow-hidden shadow-sm">
                                 <div className="flex-1 overflow-y-auto">
                                     <CustomSurveyRenderer

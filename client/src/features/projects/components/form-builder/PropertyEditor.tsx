@@ -56,9 +56,9 @@ export const PropertyEditor: React.FC<PropertyEditorProps> = ({ element, onUpdat
         }, 300);
 
         const newChoices = [...(element.choices || [])];
-        // Use a random value to ensure uniqueness even if called multiple times rapidly
-        const val = `item_${Math.floor(Math.random() * 100000)}`;
-        newChoices.push({ value: val, text: 'New Item' });
+        const count = newChoices.length + 1;
+        const val = `Item ${count}`;
+        newChoices.push({ value: val, text: val });
         handleChange('choices', newChoices);
     };
 
@@ -69,7 +69,7 @@ export const PropertyEditor: React.FC<PropertyEditorProps> = ({ element, onUpdat
     };
 
     return (
-        <div className="flex flex-col h-full border-l bg-muted">
+        <div className="flex flex-col h-full border-l">
             <ScrollArea className="flex-1">
                 <div className="p-4 space-y-6">
                     {/* Common Properties */}
@@ -95,18 +95,7 @@ export const PropertyEditor: React.FC<PropertyEditorProps> = ({ element, onUpdat
                                 />
                             </div>
                         )}
-                        {element.type !== 'survey' && (
-                            <div className="space-y-2">
-                                <Label htmlFor="visibleIf">Visible If (Expression)</Label>
-                                <Input
-                                    id="visibleIf"
-                                    value={element.visibleIf || ''}
-                                    onChange={(e) => handleChange('visibleIf', e.target.value)}
-                                    className="bg-white"
-                                    placeholder="{question} = 'value'"
-                                />
-                            </div>
-                        )}
+
                         {element.type !== 'survey' && (
                             <>
                                 <div className="space-y-2">
@@ -162,12 +151,14 @@ export const PropertyEditor: React.FC<PropertyEditorProps> = ({ element, onUpdat
                                     className="bg-white"
                                 />
                             </div>
-                            <div className="flex items-center justify-between">
-                                <Label htmlFor="showNumber">Show Number</Label>
-                                <Switch
-                                    id="showNumber"
-                                    checked={element.showNumber !== false}
-                                    onCheckedChange={(checked) => handleChange('showNumber', checked)}
+                            <div className="space-y-2">
+                                <Label htmlFor="minLength">Min Length</Label>
+                                <Input
+                                    id="minLength"
+                                    type="number"
+                                    value={element.minLength || ''}
+                                    onChange={(e) => handleChange('minLength', parseInt(e.target.value) || undefined)}
+                                    className="bg-white"
                                 />
                             </div>
                             {element.type === 'text' && (
@@ -204,28 +195,24 @@ export const PropertyEditor: React.FC<PropertyEditorProps> = ({ element, onUpdat
                             <div className="space-y-2">
                                 {(element.choices || []).map((choice: any, idx: number) => {
                                     const choiceText = typeof choice === 'object' ? choice.text : choice;
-                                    const choiceValue = typeof choice === 'object' ? choice.value : choice;
+                                    // const choiceValue = typeof choice === 'object' ? choice.value : choice; // Value hidden as per request
                                     return (
                                         <div key={idx} className="flex gap-2 items-start">
-                                            <div className="flex-1 flex gap-2">
-                                                <div className="flex-1">
-                                                    <Input
-                                                        className="h-7 text-xs bg-white"
-                                                        placeholder="Value"
-                                                        value={choiceValue}
-                                                        onChange={(e) => handleChoiceChange(idx, 'value', e.target.value)}
-                                                        title="Value"
-                                                    />
-                                                </div>
-                                                <div className="flex-1">
-                                                    <Input
-                                                        className="h-7 text-xs bg-white"
-                                                        placeholder="Text"
-                                                        value={choiceText}
-                                                        onChange={(e) => handleChoiceChange(idx, 'text', e.target.value)}
-                                                        title="Text"
-                                                    />
-                                                </div>
+                                            <div className="flex-1">
+                                                <Input
+                                                    className="h-7 text-xs bg-white"
+                                                    placeholder={`Option ${idx + 1}`}
+                                                    value={choiceText}
+                                                    onChange={(e) => {
+                                                        // When text changes, we also update value to match if it was previously matching or if we want to keep them synced.
+                                                        // For simplicity and "hiding" the value concept, let's update both.
+                                                        // But if we want to preserve existing values, we should be careful.
+                                                        // Let's just update text for now.
+                                                        handleChoiceChange(idx, 'text', e.target.value);
+                                                        // Optional: Sync value if we want simple behavior
+                                                        handleChoiceChange(idx, 'value', e.target.value);
+                                                    }}
+                                                />
                                             </div>
                                             <Button
                                                 variant="ghost"
@@ -246,6 +233,7 @@ export const PropertyEditor: React.FC<PropertyEditorProps> = ({ element, onUpdat
                             {/* Radiogroup Specific */}
                             {element.type === 'radiogroup' && (
                                 <div className="space-y-4 border-t pt-4">
+                                    <h4 className="text-xs font-semibold uppercase text-muted-foreground">Radiogroup Options</h4>
                                     <div className="flex items-center justify-between">
                                         <Label htmlFor="showOtherItem">Show "Other" Option</Label>
                                         <Switch
@@ -276,6 +264,33 @@ export const PropertyEditor: React.FC<PropertyEditorProps> = ({ element, onUpdat
                                             </div>
                                         </>
                                     )}
+                                    <div className="flex items-center justify-between">
+                                        <Label htmlFor="showNoneItem">Show "None" Option</Label>
+                                        <Switch
+                                            id="showNoneItem"
+                                            checked={element.showNoneItem || false}
+                                            onCheckedChange={(checked) => handleChange('showNoneItem', checked)}
+                                        />
+                                    </div>
+                                    {element.showNoneItem && (
+                                        <div className="space-y-2">
+                                            <Label htmlFor="noneText">"None" Text</Label>
+                                            <Input
+                                                id="noneText"
+                                                value={element.noneText || 'None'}
+                                                onChange={(e) => handleChange('noneText', e.target.value)}
+                                                className="bg-white"
+                                            />
+                                        </div>
+                                    )}
+                                    <div className="flex items-center justify-between">
+                                        <Label htmlFor="showClearButton">Show Clear Button</Label>
+                                        <Switch
+                                            id="showClearButton"
+                                            checked={element.showClearButton || false}
+                                            onCheckedChange={(checked) => handleChange('showClearButton', checked)}
+                                        />
+                                    </div>
                                 </div>
                             )}
 
@@ -288,6 +303,206 @@ export const PropertyEditor: React.FC<PropertyEditorProps> = ({ element, onUpdat
                                             id="allowClear"
                                             checked={element.allowClear || false}
                                             onCheckedChange={(checked) => handleChange('allowClear', checked)}
+                                        />
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Dropdown Specific */}
+                            {element.type === 'dropdown' && (
+                                <div className="space-y-4 border-t pt-4">
+                                    <h4 className="text-xs font-semibold uppercase text-muted-foreground">Dropdown Options</h4>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="placeholder">Placeholder</Label>
+                                        <Input
+                                            id="placeholder"
+                                            value={element.placeholder || ''}
+                                            onChange={(e) => handleChange('placeholder', e.target.value)}
+                                            className="bg-white"
+                                        />
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <Label htmlFor="showOptionsCaption">Show Options Caption</Label>
+                                        <Switch
+                                            id="showOptionsCaption"
+                                            checked={element.showOptionsCaption || false}
+                                            onCheckedChange={(checked) => handleChange('showOptionsCaption', checked)}
+                                        />
+                                    </div>
+                                    {element.showOptionsCaption && (
+                                        <div className="space-y-2">
+                                            <Label htmlFor="optionsCaption">Options Caption</Label>
+                                            <Input
+                                                id="optionsCaption"
+                                                value={element.optionsCaption || ''}
+                                                onChange={(e) => handleChange('optionsCaption', e.target.value)}
+                                                className="bg-white"
+                                            />
+                                        </div>
+                                    )}
+                                    <div className="flex items-center justify-between">
+                                        <Label htmlFor="allowClear">Allow Clear</Label>
+                                        <Switch
+                                            id="allowClear"
+                                            checked={element.allowClear || false}
+                                            onCheckedChange={(checked) => handleChange('allowClear', checked)}
+                                        />
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <Label htmlFor="showOtherItem">Show "Other" Option</Label>
+                                        <Switch
+                                            id="showOtherItem"
+                                            checked={element.showOtherItem || false}
+                                            onCheckedChange={(checked) => handleChange('showOtherItem', checked)}
+                                        />
+                                    </div>
+                                    {element.showOtherItem && (
+                                        <>
+                                            <div className="space-y-2">
+                                                <Label htmlFor="otherText">"Other" Text</Label>
+                                                <Input
+                                                    id="otherText"
+                                                    value={element.otherText || 'Other'}
+                                                    onChange={(e) => handleChange('otherText', e.target.value)}
+                                                    className="bg-white"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label htmlFor="otherPlaceholder">"Other" Placeholder</Label>
+                                                <Input
+                                                    id="otherPlaceholder"
+                                                    value={element.otherPlaceholder || ''}
+                                                    onChange={(e) => handleChange('otherPlaceholder', e.target.value)}
+                                                    className="bg-white"
+                                                />
+                                            </div>
+                                        </>
+                                    )}
+                                    <div className="flex items-center justify-between">
+                                        <Label htmlFor="showNoneItem">Show "None" Option</Label>
+                                        <Switch
+                                            id="showNoneItem"
+                                            checked={element.showNoneItem || false}
+                                            onCheckedChange={(checked) => handleChange('showNoneItem', checked)}
+                                        />
+                                    </div>
+                                    {element.showNoneItem && (
+                                        <div className="space-y-2">
+                                            <Label htmlFor="noneText">"None" Text</Label>
+                                            <Input
+                                                id="noneText"
+                                                value={element.noneText || 'None'}
+                                                onChange={(e) => handleChange('noneText', e.target.value)}
+                                                className="bg-white"
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Boolean Specific */}
+                            {element.type === 'boolean' && (
+                                <div className="space-y-4 border-t pt-4">
+                                    <h4 className="text-xs font-semibold uppercase text-muted-foreground">Boolean Options</h4>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="label">Label (Right of Switch)</Label>
+                                        <Input
+                                            id="label"
+                                            value={element.label || ''}
+                                            onChange={(e) => handleChange('label', e.target.value)}
+                                            className="bg-white"
+                                            placeholder="Overrides title if set"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="labelTrue">Label True</Label>
+                                        <Input
+                                            id="labelTrue"
+                                            value={element.labelTrue || ''}
+                                            onChange={(e) => handleChange('labelTrue', e.target.value)}
+                                            className="bg-white"
+                                            placeholder="e.g. Yes"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="labelFalse">Label False</Label>
+                                        <Input
+                                            id="labelFalse"
+                                            value={element.labelFalse || ''}
+                                            onChange={(e) => handleChange('labelFalse', e.target.value)}
+                                            className="bg-white"
+                                            placeholder="e.g. No"
+                                        />
+                                    </div>
+                                </div>
+                            )}
+
+
+
+                            {/* Checkbox Specific */}
+                            {element.type === 'checkbox' && (
+                                <div className="space-y-4 border-t pt-4">
+                                    <h4 className="text-xs font-semibold uppercase text-muted-foreground">Checkbox Options</h4>
+                                    <div className="flex items-center justify-between">
+                                        <Label htmlFor="showSelectAllItem">Show "Select All"</Label>
+                                        <Switch
+                                            id="showSelectAllItem"
+                                            checked={element.showSelectAllItem || false}
+                                            onCheckedChange={(checked) => handleChange('showSelectAllItem', checked)}
+                                        />
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <Label htmlFor="showNoneItem">Show "None"</Label>
+                                        <Switch
+                                            id="showNoneItem"
+                                            checked={element.showNoneItem || false}
+                                            onCheckedChange={(checked) => handleChange('showNoneItem', checked)}
+                                        />
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <Label htmlFor="showOtherItem">Show "Other"</Label>
+                                        <Switch
+                                            id="showOtherItem"
+                                            checked={element.showOtherItem || false}
+                                            onCheckedChange={(checked) => handleChange('showOtherItem', checked)}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="colCount">Column Count</Label>
+                                        <Select
+                                            value={element.colCount?.toString() || '0'}
+                                            onValueChange={(val) => handleChange('colCount', parseInt(val))}
+                                        >
+                                            <SelectTrigger className="bg-white">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="0">Inline (Auto)</SelectItem>
+                                                <SelectItem value="1">1 Column</SelectItem>
+                                                <SelectItem value="2">2 Columns</SelectItem>
+                                                <SelectItem value="3">3 Columns</SelectItem>
+                                                <SelectItem value="4">4 Columns</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="minSelectedChoices">Min Selected Choices</Label>
+                                        <Input
+                                            id="minSelectedChoices"
+                                            type="number"
+                                            value={element.minSelectedChoices || ''}
+                                            onChange={(e) => handleChange('minSelectedChoices', parseInt(e.target.value) || undefined)}
+                                            className="bg-white"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="maxSelectedChoices">Max Selected Choices</Label>
+                                        <Input
+                                            id="maxSelectedChoices"
+                                            type="number"
+                                            value={element.maxSelectedChoices || ''}
+                                            onChange={(e) => handleChange('maxSelectedChoices', parseInt(e.target.value) || undefined)}
+                                            className="bg-white"
                                         />
                                     </div>
                                 </div>
@@ -322,8 +537,40 @@ export const PropertyEditor: React.FC<PropertyEditorProps> = ({ element, onUpdat
                     {element.type === 'rating' && (
                         <div className="space-y-4 border-t pt-4">
                             <h4 className="text-xs font-semibold uppercase text-muted-foreground">Rating Options</h4>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="rateMin">Min Value</Label>
+                                    <Input
+                                        id="rateMin"
+                                        type="number"
+                                        value={element.rateMin || 1}
+                                        onChange={(e) => handleChange('rateMin', parseInt(e.target.value))}
+                                        className="bg-white"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="rateMax">Max Value</Label>
+                                    <Input
+                                        id="rateMax"
+                                        type="number"
+                                        value={element.rateMax || 5}
+                                        onChange={(e) => handleChange('rateMax', parseInt(e.target.value))}
+                                        className="bg-white"
+                                    />
+                                </div>
+                            </div>
                             <div className="space-y-2">
-                                <Label htmlFor="minRateDescription">Min Rate Description</Label>
+                                <Label htmlFor="rateStep">Step</Label>
+                                <Input
+                                    id="rateStep"
+                                    type="number"
+                                    value={element.rateStep || 1}
+                                    onChange={(e) => handleChange('rateStep', parseInt(e.target.value))}
+                                    className="bg-white"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="minRateDescription">Min Description</Label>
                                 <Input
                                     id="minRateDescription"
                                     value={element.minRateDescription || ''}
@@ -332,13 +579,45 @@ export const PropertyEditor: React.FC<PropertyEditorProps> = ({ element, onUpdat
                                 />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="maxRateDescription">Max Rate Description</Label>
+                                <Label htmlFor="maxRateDescription">Max Description</Label>
                                 <Input
                                     id="maxRateDescription"
                                     value={element.maxRateDescription || ''}
                                     onChange={(e) => handleChange('maxRateDescription', e.target.value)}
                                     className="bg-white"
                                 />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="rateType">Rate Type</Label>
+                                <Select
+                                    value={element.rateType || 'labels'}
+                                    onValueChange={(val) => handleChange('rateType', val)}
+                                >
+                                    <SelectTrigger className="bg-white">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="labels">Labels (Buttons)</SelectItem>
+                                        <SelectItem value="stars">Stars</SelectItem>
+                                        <SelectItem value="smileys">Smileys</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="displayMode">Display Mode</Label>
+                                <Select
+                                    value={element.displayMode || 'auto'}
+                                    onValueChange={(val) => handleChange('displayMode', val)}
+                                >
+                                    <SelectTrigger className="bg-white">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="auto">Auto</SelectItem>
+                                        <SelectItem value="buttons">Buttons</SelectItem>
+                                        <SelectItem value="dropdown">Dropdown</SelectItem>
+                                    </SelectContent>
+                                </Select>
                             </div>
                         </div>
                     )}

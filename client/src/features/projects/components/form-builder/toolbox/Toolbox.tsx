@@ -59,7 +59,6 @@ export const Toolbox: React.FC = () => {
         { type: 'dropdown', label: 'Dropdown', icon: <List size={16} /> },
         { type: 'boolean', label: 'Boolean', icon: <ToggleLeft size={16} /> },
         { type: 'rating', label: 'Rating', icon: <Star size={16} /> },
-        { type: 'file', label: 'File Upload', icon: <FileUp size={16} /> },
     ];
 
     return (
