@@ -1,0 +1,26 @@
+{
+  "include": ["app"],
+  "exclude": [
+    "**/__pycache__",
+    "**/node_modules",
+    "**/.venv",
+    "**/venv",
+    "**/htmlcov",
+    "**/tests"
+  ],
+  "venvPath": ".",
+  "venv": ".venv",
+  "executionEnvironments": [
+    {
+      "root": "app",
+      "pythonVersion": "3.11",
+      "pythonPlatform": "Linux",
+      "extraPaths": []
+    }
+  ],
+  "reportMissingImports": false,
+  "reportMissingTypeStubs": false,
+  "typeCheckingMode": "basic",
+  "pythonVersion": "3.11"
+}
+
