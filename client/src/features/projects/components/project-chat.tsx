@@ -49,6 +49,7 @@ export function ProjectChat({ projectId }: ProjectChatProps) {
     const [selectedElementId, setSelectedElementId] = useState<string | null>(null)
     const [builderPage, setBuilderPage] = useState(0)
     const [activeTab, setActiveTab] = useState("builder")
+    const [activeRightTab, setActiveRightTab] = useState("chat")
     const scrollRef = useRef<HTMLDivElement>(null)
 
     // Check if the form has any content
@@ -417,6 +418,7 @@ export function ProjectChat({ projectId }: ProjectChatProps) {
         if (!isSidebarOpen) {
             setIsSidebarOpen(true);
         }
+        setActiveRightTab("properties");
     };
 
     const getSelectedElement = () => {
@@ -819,7 +821,7 @@ export function ProjectChat({ projectId }: ProjectChatProps) {
                     )}
                 >
                     <Card className="w-80 flex flex-col h-full border-l bg-background overflow-hidden">
-                        <Tabs defaultValue="chat" className="flex flex-col h-full">
+                        <Tabs value={activeRightTab} onValueChange={setActiveRightTab} className="flex flex-col h-full">
                             <div className="px-4 pt-4">
                                 <TabsList className="w-full grid grid-cols-2">
                                     <TabsTrigger value="chat" className="flex items-center gap-2">
