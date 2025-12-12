@@ -20,8 +20,8 @@ export const chatApi = {
         return response.data
     },
 
-    getHistory: async (threadId: string): Promise<{ thread_id: string; history: ChatMessage[] }> => {
-        const response = await apiClient.get<{ thread_id: string; history: ChatMessage[] }>(
+    getHistory: async (threadId: string): Promise<{ thread_id: string; history: ChatMessage[]; final_json?: any }> => {
+        const response = await apiClient.get<{ thread_id: string; history: ChatMessage[]; final_json?: any }>(
             `/formzed-chat/history/${threadId}`
         )
         return response.data

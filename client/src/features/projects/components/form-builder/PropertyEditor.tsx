@@ -17,10 +17,9 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 interface PropertyEditorProps {
     element: any;
     onUpdate: (updates: any) => void;
-    onDelete?: () => void;
 }
 
-export const PropertyEditor: React.FC<PropertyEditorProps> = ({ element, onUpdate, onDelete }) => {
+export const PropertyEditor: React.FC<PropertyEditorProps> = ({ element, onUpdate }) => {
     if (!element) {
         return (
             <div className="p-4 text-center text-muted-foreground text-sm">
@@ -792,16 +791,6 @@ export const PropertyEditor: React.FC<PropertyEditorProps> = ({ element, onUpdat
                 </div>
             </ScrollArea>
 
-            <div className="p-4 border-t bg-muted/20">
-                <Button
-                    variant="destructive"
-                    className="w-full gap-2"
-                    onClick={onDelete}
-                >
-                    <Trash2 size={16} />
-                    Delete Element
-                </Button>
-            </div>
         </div>
     );
 };

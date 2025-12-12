@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Send, User, Bot, Plus, Settings, ChevronLeft, ChevronRight, Edit, Trash, SquarePen } from 'lucide-react'
+import { Send, User, Bot, Plus, Settings, ChevronLeft, ChevronRight, Edit, Trash, SquarePen, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -51,6 +51,11 @@ export function ProjectChat({ projectId }: ProjectChatProps) {
     const [activeTab, setActiveTab] = useState("builder")
     const scrollRef = useRef<HTMLDivElement>(null)
 
+    // Check if the form has any content
+    const hasElements = surveyJson?.pages?.some((p: any) => (p.elements?.length > 0 || p.questions?.length > 0)) || surveyJson?.elements?.length > 0 || surveyJson?.questions?.length > 0;
+    // Welcome state is when there are no elements and no chat messages
+    const isWelcomeState = !hasElements && messages.length === 0;
+
     // Query for threads (can be removed if not used elsewhere, but maybe keep for future)
     // const { data: threadsData, refetch: refetchThreads } = useQuery({
     //     queryKey: ['chat-threads'],
@@ -58,7 +63,7 @@ export function ProjectChat({ projectId }: ProjectChatProps) {
     // })
 
     // Query for history (still useful for initial load)
-    const { data: historyData, refetch: refetchHistory } = useQuery({
+    const { data: historyData, refetch: refetchHistory, isFetching: isHistoryLoading } = useQuery({
         queryKey: ['chat-history', threadId],
         queryFn: () => chatApi.getHistory(threadId),
         enabled: false,
@@ -66,8 +71,18 @@ export function ProjectChat({ projectId }: ProjectChatProps) {
 
     // Update messages when history is loaded
     useEffect(() => {
-        if (historyData?.history) {
-            setMessages(historyData.history)
+        if (historyData) {
+            if (historyData.history) {
+                setMessages(historyData.history)
+            }
+            if (historyData.final_json) {
+                try {
+                    const parsed = typeof historyData.final_json === 'string' ? JSON.parse(historyData.final_json) : historyData.final_json
+                    setSurveyJson(parsed)
+                } catch (e) {
+                    console.error("Failed to parse history final JSON:", e)
+                }
+            }
         }
     }, [historyData])
 
@@ -155,6 +170,12 @@ export function ProjectChat({ projectId }: ProjectChatProps) {
             finalThreadId = crypto.randomUUID()
             setTempThreadId(finalThreadId)
         }
+
+        if (finalThreadId !== threadId) {
+            setMessages([])
+            setSurveyJson(null)
+        }
+
         setThreadId(finalThreadId)
         setIsDialogOpen(false)
     }
@@ -210,6 +231,28 @@ export function ProjectChat({ projectId }: ProjectChatProps) {
             handleSend()
         }
     }
+
+    const renderChatInput = (className?: string, autoFocus: boolean = false) => (
+        <div className={cn("flex w-full gap-2", className)}>
+            <Input
+                placeholder={isWelcomeState ? "Describe your form to start..." : "Type your message..."}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                disabled={!isConnected}
+                className="h-9 shadow-sm bg-background"
+                autoFocus={autoFocus}
+            />
+            <Button
+                onClick={handleSend}
+                disabled={!isConnected || !input.trim()}
+                size="icon"
+                className="h-9 w-9 shrink-0 shadow-sm"
+            >
+                <Send size={16} />
+            </Button>
+        </div>
+    );
 
 
 
@@ -464,8 +507,9 @@ export function ProjectChat({ projectId }: ProjectChatProps) {
         }
     };
 
-    const handleElementDelete = () => {
-        if (!selectedElementId) return;
+    const handleElementDelete = (elementToDelete?: any) => {
+        const targetId = elementToDelete ? (elementToDelete.name || elementToDelete) : selectedElementId;
+        if (!targetId) return;
 
         setSurveyJson((prev: any) => {
             const newJson = JSON.parse(JSON.stringify(prev));
@@ -473,7 +517,7 @@ export function ProjectChat({ projectId }: ProjectChatProps) {
             const deleteRecursive = (container: any): boolean => {
                 const elements = container.elements || container.questions;
                 if (elements) {
-                    const idx = elements.findIndex((el: any) => el.name === selectedElementId);
+                    const idx = elements.findIndex((el: any) => el.name === targetId);
                     if (idx !== -1) {
                         elements.splice(idx, 1);
                         return true;
@@ -487,7 +531,7 @@ export function ProjectChat({ projectId }: ProjectChatProps) {
 
             if (newJson.pages) {
                 // Check if deleting a page
-                const pageIndex = newJson.pages.findIndex((p: any) => p.name === selectedElementId);
+                const pageIndex = newJson.pages.findIndex((p: any) => p.name === targetId);
                 if (pageIndex !== -1) {
                     if (newJson.pages.length > 1) {
                         newJson.pages.splice(pageIndex, 1);
@@ -505,7 +549,9 @@ export function ProjectChat({ projectId }: ProjectChatProps) {
             return newJson;
         });
 
-        setSelectedElementId(null);
+        if (targetId === selectedElementId) {
+            setSelectedElementId(null);
+        }
     };
 
     const handleAddPage = () => {
@@ -632,76 +678,122 @@ export function ProjectChat({ projectId }: ProjectChatProps) {
                         </div>
 
                         <TabsContent value="builder" className="flex-1 p-4 h-full overflow-hidden data-[state=inactive]:hidden flex flex-col max-w-5xl mx-auto w-full">
-                            <div className="flex justify-between items-center mb-2 px-1">
-                                <div className="flex items-center gap-1">
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="h-8 w-8 p-0"
-                                        onClick={() => setBuilderPage(Math.max(0, builderPage - 1))}
-                                        disabled={builderPage === 0}
-                                    >
-                                        <ChevronLeft className="h-4 w-4" />
-                                    </Button>
-                                    <span className="text-sm font-medium mx-2">
-                                        Page {builderPage + 1} of {Math.max(1, surveyJson?.pages?.length || 0)}
-                                    </span>
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="h-8 w-8 p-0"
-                                        onClick={() => setBuilderPage(Math.min((surveyJson?.pages?.length || 1) - 1, builderPage + 1))}
-                                        disabled={builderPage >= (surveyJson?.pages?.length || 1) - 1}
-                                    >
-                                        <ChevronRight className="h-4 w-4" />
-                                    </Button>
+                            {isHistoryLoading ? (
+                                <div className="flex flex-col items-center justify-center h-full gap-4 text-muted-foreground">
+                                    <Loader2 className="h-8 w-8 animate-spin" />
+                                    <p>Loading form...</p>
                                 </div>
-                                <div className="flex gap-1">
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="h-8 w-8 p-0"
-                                        onClick={handleEditPage}
-                                        title="Edit Page Properties"
-                                    >
-                                        <Edit className="h-4 w-4" />
-                                    </Button>
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                                        onClick={() => handleDeletePage(builderPage)}
-                                        disabled={(surveyJson?.pages?.length || 0) <= 1}
-                                        title="Delete Page"
-                                    >
-                                        <Trash className="h-4 w-4" />
-                                    </Button>
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="h-8 w-8 p-0 text-primary hover:text-primary"
-                                        onClick={handleAddPage}
-                                        title="Add New Page"
-                                    >
-                                        <Plus className="h-4 w-4" />
-                                    </Button>
-                                </div>
-                            </div>
-                            <Card className="flex-1 flex flex-col overflow-hidden shadow-sm">
-                                <div className="flex-1 overflow-y-auto">
-                                    <CustomSurveyRenderer
-                                        json={surveyJson || { elements: [] }}
-                                        onJsonChange={setSurveyJson}
-                                        onSelectElement={handleElementSelect}
-                                        selectedElementId={selectedElementId || undefined}
-                                        onAddPage={handleAddPage}
-                                        onDeletePage={handleDeletePage}
-                                        currentPage={builderPage}
-                                        onPageChange={setBuilderPage}
-                                        hideNavigation={true}
-                                    />
-                                </div>
-                            </Card>
+                            ) : (
+                                <>
+                                    <div className="flex justify-between items-center mb-2 px-1">
+                                        <div className="flex items-center gap-1">
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="h-8 w-8 p-0"
+                                                onClick={() => setBuilderPage(Math.max(0, builderPage - 1))}
+                                                disabled={builderPage === 0}
+                                            >
+                                                <ChevronLeft className="h-4 w-4" />
+                                            </Button>
+                                            <span className="text-sm font-medium mx-2">
+                                                Page {builderPage + 1} of {Math.max(1, surveyJson?.pages?.length || 0)}
+                                            </span>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="h-8 w-8 p-0"
+                                                onClick={() => setBuilderPage(Math.min((surveyJson?.pages?.length || 1) - 1, builderPage + 1))}
+                                                disabled={builderPage >= (surveyJson?.pages?.length || 1) - 1}
+                                            >
+                                                <ChevronRight className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                        <div className="flex gap-1">
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="h-8 w-8 p-0"
+                                                onClick={handleEditPage}
+                                                title="Edit Page Properties"
+                                            >
+                                                <Edit className="h-4 w-4" />
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                                                onClick={() => handleDeletePage(builderPage)}
+                                                disabled={(surveyJson?.pages?.length || 0) <= 1}
+                                                title="Delete Page"
+                                            >
+                                                <Trash className="h-4 w-4" />
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="h-8 w-8 p-0 text-primary hover:text-primary"
+                                                onClick={handleAddPage}
+                                                title="Add New Page"
+                                            >
+                                                <Plus className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                    </div>
+                                    <Card className="flex-1 flex flex-col overflow-hidden shadow-sm">
+                                        <div className="flex-1 overflow-y-auto relative">
+                                            <CustomSurveyRenderer
+                                                json={surveyJson || { elements: [] }}
+                                                onJsonChange={setSurveyJson}
+                                                onSelectElement={handleElementSelect}
+                                                selectedElementId={selectedElementId || undefined}
+                                                onAddPage={handleAddPage}
+                                                onDeletePage={handleDeletePage}
+                                                currentPage={builderPage}
+                                                onPageChange={setBuilderPage}
+                                                hideNavigation={true}
+                                                hideEmptyState={isWelcomeState}
+                                                onDeleteElement={handleElementDelete}
+                                            />
+
+                                            {isWelcomeState && (
+                                                <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-[1px] z-10">
+                                                    <div className="max-w-md w-full p-6 space-y-8 text-center">
+                                                        <div className="space-y-2">
+                                                            <h3 className="text-lg font-medium text-foreground">
+                                                                Start building your form
+                                                            </h3>
+                                                            <p className="text-sm text-muted-foreground">
+                                                                Drag and drop elements from the toolbox on the left
+                                                            </p>
+                                                        </div>
+
+                                                        <div className="relative">
+                                                            <div className="absolute inset-0 flex items-center">
+                                                                <span className="w-full border-t" />
+                                                            </div>
+                                                            <div className="relative flex justify-center text-xs uppercase">
+                                                                <span className="bg-background px-2 text-muted-foreground">
+                                                                    Or
+                                                                </span>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="space-y-4">
+                                                            <p className="text-sm text-muted-foreground">
+                                                                Describe your form to AI
+                                                            </p>
+                                                            <div className="p-1 bg-background rounded-lg shadow-lg border">
+                                                                {renderChatInput("", true)}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </Card>
+                                </>
+                            )}
                         </TabsContent>
 
                         <TabsContent value="preview" className="flex-1 p-4 h-full overflow-hidden data-[state=inactive]:hidden max-w-5xl mx-auto w-full">
@@ -806,24 +898,12 @@ export function ProjectChat({ projectId }: ProjectChatProps) {
                                 </div>
 
                                 <div className="p-3 border-t bg-background">
-                                    <div className="flex w-full gap-2">
-                                        <Input
-                                            placeholder="Type your message..."
-                                            value={input}
-                                            onChange={(e) => setInput(e.target.value)}
-                                            onKeyDown={handleKeyDown}
-                                            disabled={!isConnected}
-                                            className="h-9"
-                                        />
-                                        <Button
-                                            onClick={handleSend}
-                                            disabled={!isConnected || !input.trim()}
-                                            size="icon"
-                                            className="h-9 w-9 shrink-0"
-                                        >
-                                            <Send size={16} />
-                                        </Button>
-                                    </div>
+                                    {!isWelcomeState && renderChatInput()}
+                                    {isWelcomeState && (
+                                        <div className="text-xs text-center text-muted-foreground py-2">
+                                            Use the chat input in the center of the screen to start.
+                                        </div>
+                                    )}
                                 </div>
                             </TabsContent>
 
@@ -831,7 +911,6 @@ export function ProjectChat({ projectId }: ProjectChatProps) {
                                 <PropertyEditor
                                     element={getSelectedElement()}
                                     onUpdate={handleElementUpdate}
-                                    onDelete={handleElementDelete}
                                 />
                             </TabsContent>
                         </Tabs>

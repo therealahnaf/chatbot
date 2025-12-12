@@ -62,7 +62,8 @@ export const Toolbox: React.FC = () => {
     ];
 
     return (
-        <div className="flex flex-col gap-2 p-2">
+        <div className="flex flex-col gap-2 p-4">
+            <h4 className="text-xs font-semibold uppercase text-black text-center">Toolbox</h4>
             <div className="grid grid-cols-1 gap-2">
                 {items.map((item) => (
                     <ToolboxItem

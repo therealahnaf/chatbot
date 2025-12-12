@@ -22,6 +22,8 @@ interface CustomSurveyRendererProps {
     currentPage?: number;
     onPageChange?: (page: number) => void;
     hideNavigation?: boolean;
+    hideEmptyState?: boolean;
+    onDeleteElement?: (element: any) => void;
 }
 
 export const CustomSurveyRenderer: React.FC<CustomSurveyRendererProps> = ({
@@ -35,6 +37,8 @@ export const CustomSurveyRenderer: React.FC<CustomSurveyRendererProps> = ({
     currentPage: controlledPage,
     onPageChange,
     hideNavigation = false,
+    hideEmptyState = false,
+    onDeleteElement,
 }) => {
     const [internalPage, setInternalPage] = useState(0);
     const currentPage = controlledPage !== undefined ? controlledPage : internalPage;
@@ -211,8 +215,7 @@ export const CustomSurveyRenderer: React.FC<CustomSurveyRendererProps> = ({
                     <div
                         className="space-y-6 origin-top-left"
                         style={{
-                            transform: 'scale(1.2)',
-                            width: 'calc(100% / 1.2)'
+                            zoom: 1.2
                         }}
                     >
                         {elements.map((element) => {
@@ -263,6 +266,7 @@ export const CustomSurveyRenderer: React.FC<CustomSurveyRendererProps> = ({
                                     element={element}
                                     isSelected={selectedElementId === element.name}
                                     onSelect={onSelectElement}
+                                    onDelete={onDeleteElement}
                                 >
                                     <Component element={element} />
                                 </FormElementWrapper>
@@ -271,7 +275,7 @@ export const CustomSurveyRenderer: React.FC<CustomSurveyRendererProps> = ({
                     </SortableContext>
                 )}
 
-                {elements.length === 0 && (
+                {elements.length === 0 && !hideEmptyState && (
                     <div className={cn(
                         "text-center text-muted-foreground py-10 rounded-lg",
                         !previewMode && "border-2 border-dashed"

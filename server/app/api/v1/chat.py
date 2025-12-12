@@ -121,7 +121,9 @@ def get_history(
                 content = msg.content if hasattr(msg, "content") else str(msg)
             history.append({"type": msg_type, "content": content})
             
-        return {"thread_id": thread_id, "history": history}
+        final_json = state.values.get("final_json")
+            
+        return {"thread_id": thread_id, "history": history, "final_json": final_json}
     except Exception as e:
         print(f"Error getting history: {e}")
         raise HTTPException(status_code=500, detail=str(e))
