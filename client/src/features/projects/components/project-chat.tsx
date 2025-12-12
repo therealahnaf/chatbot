@@ -259,7 +259,9 @@ export function ProjectChat({ projectId }: ProjectChatProps) {
     // Auto-scroll to bottom
     useEffect(() => {
         if (scrollRef.current) {
-            scrollRef.current.scrollTop = scrollRef.current.scrollHeight
+            setTimeout(() => {
+                scrollRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
+            }, 100)
         }
     }, [messages])
 
@@ -854,7 +856,7 @@ export function ProjectChat({ projectId }: ProjectChatProps) {
                                 </div>
 
                                 <div className="flex-1 overflow-hidden relative">
-                                    <ScrollArea className="h-full p-4" ref={scrollRef}>
+                                    <ScrollArea className="h-full p-4">
                                         <div className="space-y-4">
                                             {messages.length === 0 && (
                                                 <div className="text-center text-muted-foreground py-8 text-sm">
@@ -893,6 +895,7 @@ export function ProjectChat({ projectId }: ProjectChatProps) {
                                                         </div>
                                                     </div>
                                                 ))}
+                                            <div ref={scrollRef} />
                                         </div>
                                     </ScrollArea>
                                 </div>
