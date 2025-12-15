@@ -43,6 +43,11 @@ export const sidebarData: SidebarData = {
           url: '/',
           icon: LayoutDashboard,
         },
+        {
+          title: 'Formly',
+          url: '/formly',
+          icon: MessagesSquare,
+        },
         // {
         //   title: 'Tasks',
         //   url: '/tasks',

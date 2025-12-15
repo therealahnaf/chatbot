@@ -31,4 +31,8 @@ export const chatApi = {
         const response = await apiClient.get<{ threads: string[] }>('/formzed-chat/threads')
         return response.data
     },
+    getSharedForm: async (threadId: string): Promise<{ final_json: any }> => {
+        const response = await apiClient.get<{ final_json: any }>(`/formzed-chat/share/${threadId}`)
+        return response.data
+    },
 }

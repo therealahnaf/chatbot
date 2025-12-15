@@ -1,55 +1,38 @@
-# Multi-stage build for smaller image size
+# Use a Python image with uv pre-installed
+FROM python:3.11-slim-bullseye
 
-# Stage 1: Builder
-FROM python:3.11-slim as builder
+# Install uv
+RUN pip install uv
 
 # Set working directory
 WORKDIR /app
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
-    gcc \
-    g++ \
+    curl \
     libpq-dev \
-    curl \
+    gcc \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy dependency files and README (required by Hatchling)
-COPY pyproject.toml README.md ./
+# Copy dependency files
+COPY pyproject.toml uv.lock ./
 
-# Copy app directory (required for package installation)
-COPY app ./app
-
-# Install dependencies using pip
-RUN pip install --no-cache-dir -e .
-
-# Stage 2: Runtime
-FROM python:3.11-slim
-
-# Set working directory
-WORKDIR /app
-
-# Install runtime dependencies
-RUN apt-get update && apt-get install -y \
-    libpq5 \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
-
-# Copy installed packages from builder
-COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
-COPY --from=builder /usr/local/bin /usr/local/bin
-
-# Create non-root user
-RUN useradd -m -u 1000 appuser && \
-    chown -R appuser:appuser /app
+# Install dependencies
+RUN uv sync --frozen --no-install-project
 
 # Copy application code
-COPY --chown=appuser:appuser ./app ./app
-COPY --chown=appuser:appuser ./alembic ./alembic
-COPY --chown=appuser:appuser ./alembic.ini ./alembic.ini
+COPY app ./app
+COPY alembic ./alembic
+COPY alembic.ini ./alembic.ini
+COPY scripts ./scripts
+COPY README.md ./README.md
 
-# Switch to non-root user
-USER appuser
+# Install the project itself
+RUN uv sync --frozen
+
+# Copy entrypoint script
+COPY entrypoint.sh ./entrypoint.sh
+RUN chmod +x ./entrypoint.sh
 
 # Expose port
 EXPOSE 8000
@@ -58,5 +41,5 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
-# Run application
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Set entrypoint
+ENTRYPOINT ["./entrypoint.sh"]

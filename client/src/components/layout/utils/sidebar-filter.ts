@@ -18,6 +18,7 @@ const urlToDisplayIdMap: Record<string, DisplayItemId> = {
   '/knowledge-base/worker-status': 'worker-status',
   '/knowledge-base/downtime': 'system-downtime',
   '/help-center': 'help-center',
+  '/formly': 'formly',
 }
 
 /**
@@ -72,12 +73,12 @@ function isItemVisible(item: NavItem, visibleIds: DisplayItemId[]): boolean {
           ? subUrl
           : subUrl.toString()
         : ''
-      
+
       // Always show settings sub-items
       if (alwaysVisibleUrls.some((visibleUrl) => subUrlStr.startsWith(visibleUrl))) {
         return true
       }
-      
+
       const subDisplayId = getDisplayIdForItem(subItem as NavItem)
       return !subDisplayId || visibleIds.includes(subDisplayId)
     })
@@ -86,7 +87,7 @@ function isItemVisible(item: NavItem, visibleIds: DisplayItemId[]): boolean {
 
   // For regular items, check display ID
   const displayId = getDisplayIdForItem(item)
-  
+
   // If no display ID mapping found, hide the item (it's not in our preference list)
   if (!displayId) {
     return false
@@ -115,12 +116,12 @@ export function filterSidebarItems(
                   ? subUrl
                   : subUrl.toString()
                 : ''
-              
+
               // Always show settings sub-items
               if (alwaysVisibleUrls.some((visibleUrl) => subUrlStr.startsWith(visibleUrl))) {
                 return true
               }
-              
+
               const subDisplayId = getDisplayIdForItem(subItem as NavItem)
               return !subDisplayId || visibleIds.includes(subDisplayId)
             })

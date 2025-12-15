@@ -7,7 +7,7 @@ import { useState, useEffect, useCallback } from 'react'
 
 const DISPLAY_PREFERENCES_KEY = 'display_preferences'
 
-export type DisplayItemId = 
+export type DisplayItemId =
   | 'dashboard'
   | 'tickets'
   | 'chats'
@@ -17,6 +17,7 @@ export type DisplayItemId =
   | 'worker-status'
   | 'system-downtime'
   | 'help-center'
+  | 'formly'
 
 export interface DisplayPreferences {
   items: DisplayItemId[]
@@ -33,6 +34,7 @@ const DEFAULT_PREFERENCES: DisplayPreferences = {
     'worker-status',
     'system-downtime',
     'help-center',
+    'formly',
   ],
 }
 
@@ -122,7 +124,7 @@ export function useDisplayPreferences() {
 
     window.addEventListener('storage', handleStorageChange)
     window.addEventListener('displayPreferencesChanged', handlePreferencesChanged as EventListener)
-    
+
     return () => {
       window.removeEventListener('storage', handleStorageChange)
       window.removeEventListener('displayPreferencesChanged', handlePreferencesChanged as EventListener)

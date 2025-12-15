@@ -14,7 +14,7 @@ function decodeTokenExp(token: string): number | null {
         .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
         .join('')
     )
-    
+
     const payload = JSON.parse(jsonPayload)
     // JWT exp is in seconds, convert to milliseconds
     return payload.exp ? payload.exp * 1000 : null
@@ -25,7 +25,7 @@ function decodeTokenExp(token: string): number | null {
 }
 
 // API Configuration
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
 export const API_PREFIX = '/api/v1'
 
 // Create axios instance
@@ -41,11 +41,11 @@ const apiClient: AxiosInstance = axios.create({
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const { auth } = useAuthStore.getState()
-    
+
     if (auth.accessToken && config.headers) {
       config.headers.Authorization = `Bearer ${auth.accessToken}`
     }
-    
+
     return config
   },
   (error: AxiosError) => {
@@ -104,9 +104,9 @@ apiClient.interceptors.response.use(
           throw new Error('No refresh token available')
         }
 
-        // Try to refresh the token
+        // Try to refresh the token using a new axios instance to avoid interceptors
         const response = await axios.post(
-          `${API_BASE_URL}${API_PREFIX}/auth/refresh`,
+          `${API_BASE_URL || ''}${API_PREFIX}/auth/refresh`,
           { refresh_token: refreshToken },
           {
             headers: {
@@ -137,12 +137,12 @@ apiClient.interceptors.response.use(
         if (originalRequest.headers) {
           originalRequest.headers.Authorization = `Bearer ${access_token}`
         }
-        
+
         return apiClient(originalRequest)
       } catch (refreshError) {
         // Refresh failed, clear queue and logout user
         processQueue(refreshError)
-        
+
         const state = useAuthStore.getState()
         state.auth.reset()
 

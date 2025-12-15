@@ -20,13 +20,17 @@ export default defineConfig({
     },
   },
   server: {
-    host: '0.0.0.0',
+    host: true,
+    allowedHosts: [
+      "dhaka-dev-one.centralindia.cloudapp.azure.com",
+    ],
     port: 5173,
     proxy: {
       '/api': {
-        target: process.env.VITE_API_BASE_URL || 'http://backend:8000',
+        target: process.env.BACKEND_URL || 'http://server:8000',
         changeOrigin: true,
         secure: false,
+        ws: true,
       },
     },
   },

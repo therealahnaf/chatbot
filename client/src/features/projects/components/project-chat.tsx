@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Send, User, Bot, Plus, Settings, ChevronLeft, ChevronRight, Edit, Trash, SquarePen, Loader2 } from 'lucide-react'
+import { Send, User, Bot, Plus, Settings, ChevronLeft, ChevronRight, Edit, Trash, SquarePen, Loader2, Share2 } from 'lucide-react'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -8,6 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 import { chatApi, type ChatMessage } from '@/lib/api/chat.api'
+import { API_BASE_URL, API_PREFIX } from '@/lib/api-client'
 import { cn } from '@/lib/utils'
 import { CustomSurveyRenderer } from './form-builder/renderer/CustomSurveyRenderer'
 import { Toolbox, ToolboxItem } from './form-builder/toolbox/Toolbox'
@@ -113,7 +115,15 @@ export function ProjectChat({ projectId }: ProjectChatProps) {
             socket.close()
         }
 
-        const wsUrl = `ws://localhost:8000/api/v1/formzed-chat/ws/${threadId}`
+        let baseUrl = API_BASE_URL
+        if (!baseUrl) {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+            baseUrl = `${protocol}//${window.location.host}`
+        } else {
+            baseUrl = baseUrl.replace(/^http/, 'ws')
+        }
+
+        const wsUrl = `${baseUrl}${API_PREFIX}/formzed-chat/ws/${threadId}`
         console.log(`Connecting to WebSocket: ${wsUrl}`)
 
         const ws = new WebSocket(wsUrl)
@@ -610,6 +620,16 @@ export function ProjectChat({ projectId }: ProjectChatProps) {
         }
     };
 
+    const handleShare = () => {
+        if (!threadId) {
+            toast.error("No form to share")
+            return
+        }
+        const url = `${window.location.origin}/share/${threadId}`
+        navigator.clipboard.writeText(url)
+        toast.success("Link copied to clipboard!")
+    }
+
     // Custom collision detection strategy
     const customCollisionDetection: CollisionDetection = (args) => {
         // First, check for pointer collisions (most intuitive)
@@ -800,7 +820,18 @@ export function ProjectChat({ projectId }: ProjectChatProps) {
                             )}
                         </TabsContent>
 
-                        <TabsContent value="preview" className="flex-1 p-4 h-full overflow-hidden data-[state=inactive]:hidden max-w-5xl mx-auto w-full">
+                        <TabsContent value="preview" className="flex-1 p-4 h-full overflow-hidden data-[state=inactive]:hidden max-w-5xl mx-auto w-full flex flex-col">
+                            <div className="flex justify-end mb-2">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={handleShare}
+                                    className="gap-2"
+                                >
+                                    <Share2 className="h-4 w-4" />
+                                    Get Shareable Link
+                                </Button>
+                            </div>
                             <Card className="h-full flex flex-col overflow-hidden shadow-sm">
                                 <div className="flex-1 overflow-y-auto">
                                     <CustomSurveyRenderer

@@ -1,23 +1,12 @@
 import { useMemo } from 'react'
-import { useQuery } from '@tanstack/react-query'
-import { Link } from '@tanstack/react-router'
-import { Folder, Plus } from 'lucide-react'
 import { useLayout } from '@/context/layout-provider'
-import { CreateProjectDialog } from '@/features/projects/components/create-project-dialog'
-import type { Project } from '@/features/projects/types/project-types'
 import { useDisplayPreferences } from '@/hooks/use-display-preferences'
 import { useCurrentUser } from '@/hooks/use-users'
-import { projectsApi } from '@/lib/api/projects.api'
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
-  SidebarGroup,
-  SidebarGroupLabel,
   SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
   SidebarRail,
 } from '@/components/ui/sidebar'
 // import { AppTitle } from './app-title'
@@ -32,10 +21,7 @@ export function AppSidebar() {
   const { preferences } = useDisplayPreferences()
   const { data: currentUser, isLoading } = useCurrentUser()
 
-  const { data: projects } = useQuery({
-    queryKey: ['projects'],
-    queryFn: () => projectsApi.listProjects(),
-  })
+
 
   // Filter sidebar items based on display preferences
   const filteredNavGroups = filterSidebarItems(
@@ -89,46 +75,7 @@ export function AppSidebar() {
           <NavGroup key={props.title} {...props} />
         ))}
 
-        <SidebarGroup>
-          <SidebarGroupLabel>Projects</SidebarGroupLabel>
-          <SidebarMenu>
-            {projects && projects.length > 0 ? (
-              projects.map((project: Project) => (
-                <SidebarMenuItem key={project.id}>
-                  <SidebarMenuButton asChild tooltip={project.title}>
-                    <Link to={`/projects/${project.id}`}>
-                      <Folder />
-                      <span>{project.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))
-            ) : (
-              <SidebarMenuItem>
-                <CreateProjectDialog
-                  trigger={
-                    <SidebarMenuButton>
-                      <Plus />
-                      <span>Create Project</span>
-                    </SidebarMenuButton>
-                  }
-                />
-              </SidebarMenuItem>
-            )}
-            {projects && projects.length > 0 && (
-              <SidebarMenuItem>
-                <CreateProjectDialog
-                  trigger={
-                    <SidebarMenuButton>
-                      <Plus />
-                      <span>Create Project</span>
-                    </SidebarMenuButton>
-                  }
-                />
-              </SidebarMenuItem>
-            )}
-          </SidebarMenu>
-        </SidebarGroup>
+
       </SidebarContent>
       <SidebarFooter>{!isLoading && <NavUser user={userData} />}</SidebarFooter>
       <SidebarRail />

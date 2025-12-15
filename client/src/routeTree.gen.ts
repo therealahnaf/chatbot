@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as ClerkRouteRouteImport } from './routes/clerk/route'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as ShareThreadIdRouteImport } from './routes/share.$threadId'
 import { Route as errors503RouteImport } from './routes/(errors)/503'
 import { Route as errors500RouteImport } from './routes/(errors)/500'
 import { Route as errors404RouteImport } from './routes/(errors)/404'
@@ -29,6 +30,7 @@ import { Route as AuthenticatedUsersIndexRouteImport } from './routes/_authentic
 import { Route as AuthenticatedTasksIndexRouteImport } from './routes/_authenticated/tasks/index'
 import { Route as AuthenticatedSettingsIndexRouteImport } from './routes/_authenticated/settings/index'
 import { Route as AuthenticatedHelpCenterIndexRouteImport } from './routes/_authenticated/help-center/index'
+import { Route as AuthenticatedFormlyIndexRouteImport } from './routes/_authenticated/formly/index'
 import { Route as AuthenticatedChatsIndexRouteImport } from './routes/_authenticated/chats/index'
 import { Route as AuthenticatedChatWidgetsIndexRouteImport } from './routes/_authenticated/chat-widgets/index'
 import { Route as AuthenticatedAppsIndexRouteImport } from './routes/_authenticated/apps/index'
@@ -61,6 +63,11 @@ const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const ShareThreadIdRoute = ShareThreadIdRouteImport.update({
+  id: '/share/$threadId',
+  path: '/share/$threadId',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const errors503Route = errors503RouteImport.update({
   id: '/(errors)/503',
@@ -146,6 +153,12 @@ const AuthenticatedHelpCenterIndexRoute =
   AuthenticatedHelpCenterIndexRouteImport.update({
     id: '/help-center/',
     path: '/help-center/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedFormlyIndexRoute =
+  AuthenticatedFormlyIndexRouteImport.update({
+    id: '/formly/',
+    path: '/formly/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedChatsIndexRoute = AuthenticatedChatsIndexRouteImport.update({
@@ -266,6 +279,7 @@ export interface FileRoutesByFullPath {
   '/404': typeof errors404Route
   '/500': typeof errors500Route
   '/503': typeof errors503Route
+  '/share/$threadId': typeof ShareThreadIdRoute
   '/': typeof AuthenticatedIndexRoute
   '/chat-widgets/create': typeof AuthenticatedChatWidgetsCreateRoute
   '/chats/$conversationId': typeof AuthenticatedChatsConversationIdRoute
@@ -282,6 +296,7 @@ export interface FileRoutesByFullPath {
   '/apps': typeof AuthenticatedAppsIndexRoute
   '/chat-widgets': typeof AuthenticatedChatWidgetsIndexRoute
   '/chats': typeof AuthenticatedChatsIndexRoute
+  '/formly': typeof AuthenticatedFormlyIndexRoute
   '/help-center': typeof AuthenticatedHelpCenterIndexRoute
   '/settings/': typeof AuthenticatedSettingsIndexRoute
   '/tasks': typeof AuthenticatedTasksIndexRoute
@@ -302,6 +317,7 @@ export interface FileRoutesByTo {
   '/404': typeof errors404Route
   '/500': typeof errors500Route
   '/503': typeof errors503Route
+  '/share/$threadId': typeof ShareThreadIdRoute
   '/': typeof AuthenticatedIndexRoute
   '/chat-widgets/create': typeof AuthenticatedChatWidgetsCreateRoute
   '/chats/$conversationId': typeof AuthenticatedChatsConversationIdRoute
@@ -318,6 +334,7 @@ export interface FileRoutesByTo {
   '/apps': typeof AuthenticatedAppsIndexRoute
   '/chat-widgets': typeof AuthenticatedChatWidgetsIndexRoute
   '/chats': typeof AuthenticatedChatsIndexRoute
+  '/formly': typeof AuthenticatedFormlyIndexRoute
   '/help-center': typeof AuthenticatedHelpCenterIndexRoute
   '/settings': typeof AuthenticatedSettingsIndexRoute
   '/tasks': typeof AuthenticatedTasksIndexRoute
@@ -343,6 +360,7 @@ export interface FileRoutesById {
   '/(errors)/404': typeof errors404Route
   '/(errors)/500': typeof errors500Route
   '/(errors)/503': typeof errors503Route
+  '/share/$threadId': typeof ShareThreadIdRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/chat-widgets/create': typeof AuthenticatedChatWidgetsCreateRoute
   '/_authenticated/chats/$conversationId': typeof AuthenticatedChatsConversationIdRoute
@@ -359,6 +377,7 @@ export interface FileRoutesById {
   '/_authenticated/apps/': typeof AuthenticatedAppsIndexRoute
   '/_authenticated/chat-widgets/': typeof AuthenticatedChatWidgetsIndexRoute
   '/_authenticated/chats/': typeof AuthenticatedChatsIndexRoute
+  '/_authenticated/formly/': typeof AuthenticatedFormlyIndexRoute
   '/_authenticated/help-center/': typeof AuthenticatedHelpCenterIndexRoute
   '/_authenticated/settings/': typeof AuthenticatedSettingsIndexRoute
   '/_authenticated/tasks/': typeof AuthenticatedTasksIndexRoute
@@ -382,6 +401,7 @@ export interface FileRouteTypes {
     | '/404'
     | '/500'
     | '/503'
+    | '/share/$threadId'
     | '/'
     | '/chat-widgets/create'
     | '/chats/$conversationId'
@@ -398,6 +418,7 @@ export interface FileRouteTypes {
     | '/apps'
     | '/chat-widgets'
     | '/chats'
+    | '/formly'
     | '/help-center'
     | '/settings/'
     | '/tasks'
@@ -418,6 +439,7 @@ export interface FileRouteTypes {
     | '/404'
     | '/500'
     | '/503'
+    | '/share/$threadId'
     | '/'
     | '/chat-widgets/create'
     | '/chats/$conversationId'
@@ -434,6 +456,7 @@ export interface FileRouteTypes {
     | '/apps'
     | '/chat-widgets'
     | '/chats'
+    | '/formly'
     | '/help-center'
     | '/settings'
     | '/tasks'
@@ -458,6 +481,7 @@ export interface FileRouteTypes {
     | '/(errors)/404'
     | '/(errors)/500'
     | '/(errors)/503'
+    | '/share/$threadId'
     | '/_authenticated/'
     | '/_authenticated/chat-widgets/create'
     | '/_authenticated/chats/$conversationId'
@@ -474,6 +498,7 @@ export interface FileRouteTypes {
     | '/_authenticated/apps/'
     | '/_authenticated/chat-widgets/'
     | '/_authenticated/chats/'
+    | '/_authenticated/formly/'
     | '/_authenticated/help-center/'
     | '/_authenticated/settings/'
     | '/_authenticated/tasks/'
@@ -496,6 +521,7 @@ export interface RootRouteChildren {
   errors404Route: typeof errors404Route
   errors500Route: typeof errors500Route
   errors503Route: typeof errors503Route
+  ShareThreadIdRoute: typeof ShareThreadIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -520,6 +546,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/share/$threadId': {
+      id: '/share/$threadId'
+      path: '/share/$threadId'
+      fullPath: '/share/$threadId'
+      preLoaderRoute: typeof ShareThreadIdRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/(errors)/503': {
       id: '/(errors)/503'
@@ -638,6 +671,13 @@ declare module '@tanstack/react-router' {
       path: '/help-center'
       fullPath: '/help-center'
       preLoaderRoute: typeof AuthenticatedHelpCenterIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/formly/': {
+      id: '/_authenticated/formly/'
+      path: '/formly'
+      fullPath: '/formly'
+      preLoaderRoute: typeof AuthenticatedFormlyIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/chats/': {
@@ -803,6 +843,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAppsIndexRoute: typeof AuthenticatedAppsIndexRoute
   AuthenticatedChatWidgetsIndexRoute: typeof AuthenticatedChatWidgetsIndexRoute
   AuthenticatedChatsIndexRoute: typeof AuthenticatedChatsIndexRoute
+  AuthenticatedFormlyIndexRoute: typeof AuthenticatedFormlyIndexRoute
   AuthenticatedHelpCenterIndexRoute: typeof AuthenticatedHelpCenterIndexRoute
   AuthenticatedTasksIndexRoute: typeof AuthenticatedTasksIndexRoute
   AuthenticatedUsersIndexRoute: typeof AuthenticatedUsersIndexRoute
@@ -823,6 +864,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAppsIndexRoute: AuthenticatedAppsIndexRoute,
   AuthenticatedChatWidgetsIndexRoute: AuthenticatedChatWidgetsIndexRoute,
   AuthenticatedChatsIndexRoute: AuthenticatedChatsIndexRoute,
+  AuthenticatedFormlyIndexRoute: AuthenticatedFormlyIndexRoute,
   AuthenticatedHelpCenterIndexRoute: AuthenticatedHelpCenterIndexRoute,
   AuthenticatedTasksIndexRoute: AuthenticatedTasksIndexRoute,
   AuthenticatedUsersIndexRoute: AuthenticatedUsersIndexRoute,
@@ -893,6 +935,7 @@ const rootRouteChildren: RootRouteChildren = {
   errors404Route: errors404Route,
   errors500Route: errors500Route,
   errors503Route: errors503Route,
+  ShareThreadIdRoute: ShareThreadIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

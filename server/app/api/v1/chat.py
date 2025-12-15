@@ -131,6 +131,34 @@ def get_history(
         if conn:
             conn.close()
 
+@router.get("/share/{thread_id}")
+def get_shared_form(
+    thread_id: str,
+    conn = Depends(get_sync_db_connection)
+):
+    try:
+        checkpointer = get_checkpointer(conn)
+        graph = get_graph(checkpointer)
+        config = {"configurable": {"thread_id": thread_id}}
+        
+        state = graph.get_state(config)
+        if not state or not state.values:
+            raise HTTPException(status_code=404, detail="Form not found")
+            
+        final_json = state.values.get("final_json")
+        if not final_json:
+             raise HTTPException(status_code=404, detail="Form content not found")
+
+        return {"final_json": final_json}
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error getting shared form: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        if conn:
+            conn.close()
+
 @router.get("/threads")
 def get_threads(conn = Depends(get_sync_db_connection)):
     try:
