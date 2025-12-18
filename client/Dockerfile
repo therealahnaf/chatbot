@@ -18,4 +18,5 @@ EXPOSE 5173
 
 # Start dev server with hot reloading
 # Host 0.0.0.0 is required for Docker port mapping
+# Environment variables are passed from docker-compose.yml
 CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
